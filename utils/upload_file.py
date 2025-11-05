@@ -44,8 +44,7 @@ def upload_file(url: str, token: str, file_data: BytesIO, filename:str, file_typ
     if response.status_code != 200:
        return dumps({"error":{"message": f'Error uploading file: {response.status_code}, {response.text}'}}), response
     elif response.status_code == 200:
-        return dumps(
-{
+        return dumps({
             "file_path_download": f"[Download {filename}.{file_type}](/api/v1/files/{response.json()['id']}/content)"
             },
             indent=4,

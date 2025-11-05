@@ -20,12 +20,15 @@ from docx import Document
 from utils.load_md_templates import load_md_templates
 from utils.upload_file import upload_file
 from utils.download_file import download_file
-from utils.knowledge import create_knowledge, add_file_to_knowledge
+from utils.knowledge import create_knowledge
 
 # Parameters
 URL = getenv('OWUI_URL',)
 PORT = int(getenv('PORT'))
 POWERPOINT_TEMPLATE, EXCEL_TEMPLATE, WORD_TEMPLATE,MARKDOWN_TEMPLATE, MCP_INSTRUCTIONS = load_md_templates()
+# Enable or disable automatic creation of knowledge collections after upload
+# Defaults to true to preserve existing behavior. Set to 'false' to disable.
+ENABLE_CREATE_KNOWLEDGE = getenv('ENABLE_CREATE_KNOWLEDGE', 'true').lower() == 'true'
 
 # Pydantic model for review comments
 class ReviewComment(BaseModel):
@@ -94,7 +97,7 @@ async def generate_powerpoint(
         )
 
         # If upload is successful, add to knowledge base
-        if "file_path_download" in response:
+        if "file_path_download" in response and ENABLE_CREATE_KNOWLEDGE:
             # create knowledge base if not exists
             create_knowledge_status = create_knowledge(
                 url=URL, 
@@ -106,8 +109,10 @@ async def generate_powerpoint(
                 logger.info("Knowledge base updated successfully.")
             else:
                 logger.error(f"Error creating or updating knowledge base")
+        elif "error" in response:
+            logger.error(f"Error uploading the file.")
         else:
-            logger.error(f"Error uploading file to knowledge base")
+            logger.info("Skipping knowledge creation because ENABLE_CREATE_KNOWLEDGE is false")
 
         return response 
     
@@ -176,7 +181,7 @@ async def generate_excel(
         )
 
         # If upload is successful, add to knowledge base
-        if "file_path_download" in response:
+        if "file_path_download" in response and ENABLE_CREATE_KNOWLEDGE:
             # create knowledge base if not exists
             create_knowledge_status = create_knowledge(
                 url=URL, 
@@ -188,8 +193,10 @@ async def generate_excel(
                 logger.info("Knowledge base updated successfully.")
             else:
                 logger.error(f"Error creating or updating knowledge base")
+        elif "error" in response:
+            logger.error(f"Error uploading the file.")
         else:
-            logger.error(f"Error uploading file to knowledge base")
+            logger.info("Skipping knowledge creation because ENABLE_CREATE_KNOWLEDGE is false")
 
         return response 
     
@@ -258,7 +265,7 @@ async def generate_word(
         )
 
         # If upload is successful, add to knowledge base
-        if "file_path_download" in response:
+        if "file_path_download" in response and ENABLE_CREATE_KNOWLEDGE:
             # create knowledge base if not exists
             create_knowledge_status = create_knowledge(
                 url=URL, 
@@ -270,8 +277,10 @@ async def generate_word(
                 logger.info("Knowledge base updated successfully.")
             else:
                 logger.error(f"Error creating or updating knowledge base")
+        elif "error" in response:
+            logger.error(f"Error uploading the file.")
         else:
-            logger.error(f"Error uploading file to knowledge base")
+            logger.info("Skipping knowledge creation because ENABLE_CREATE_KNOWLEDGE is false")
 
         return response 
     
@@ -340,7 +349,7 @@ async def generate_markdown(
         )
 
         # If upload is successful, add to knowledge base
-        if "file_path_download" in response:
+        if "file_path_download" in response and ENABLE_CREATE_KNOWLEDGE:
             # create knowledge base if not exists
             create_knowledge_status = create_knowledge(
                 url=URL, 
@@ -352,8 +361,10 @@ async def generate_markdown(
                 logger.info("Knowledge base updated successfully.")
             else:
                 logger.error(f"Error creating or updating knowledge base")
+        elif "error" in response:
+            logger.error(f"Error uploading the file.")
         else:
-            logger.error(f"Error uploading file to knowledge base")
+            logger.info("Skipping knowledge creation because ENABLE_CREATE_KNOWLEDGE is false")
 
         return response 
     
@@ -544,7 +555,7 @@ async def review_docx(
         )
 
         # If upload is successful, add to knowledge base
-        if "file_path_download" in response:
+        if "file_path_download" in response and ENABLE_CREATE_KNOWLEDGE:
             # create knowledge base if not exists
             create_knowledge_status = create_knowledge(
                 url=URL, 
@@ -557,8 +568,10 @@ async def review_docx(
                 logger.info("Knowledge base updated successfully.")
             else:
                 logger.error(f"Error creating or updating knowledge base")
+        elif "error" in response:
+            logger.error(f"Error uploading the file.")
         else:
-            logger.error(f"Error uploading file to knowledge base")
+            logger.info("Skipping knowledge creation because ENABLE_CREATE_KNOWLEDGE is false")
 
         return response
     

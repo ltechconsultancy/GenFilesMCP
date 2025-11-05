@@ -34,7 +34,7 @@ GenFilesMCP is a Model Context Protocol (MCP) server that generates PowerPoint, 
 
 ## Status
 
-This is the **first stable version (v0.2.0)** designed for multi-user environments. It includes enhanced security, user-specific knowledge base integration, and improved document management.
+This release is **v0.2.1**. It introduces a new environment variable `ENABLE_CREATE_KNOWLEDGE` that lets deployments choose whether generated or reviewed files are automatically added to users' knowledge collections. This enables coexistence between RAG-preserving deployments (do not enable knowledge creation) and deployments that want generated files saved to knowledge collections (requires enabling the Open Web UI document option `Bypass Embedding and Retrieval`). The original behavior (downloading files from chats) remains unchanged for end users.
 
 ## Prerequisites
 
@@ -49,19 +49,29 @@ This is the **first stable version (v0.2.0)** designed for multi-user environmen
 Pull the pre-built Docker image from GitHub Container Registry:
 
 ```bash
-docker pull ghcr.io/baronco/genfilesmcp:v0.2.0
+docker pull ghcr.io/baronco/genfilesmcp:v0.2.1
 ```
 
 Run the container:
 
 ```bash
-docker run -d --restart unless-stopped -p YOUR_PORT:YOUR_PORT -e OWUI_URL="http://host.docker.internal:3000" -e PORT=YOUR_PORT --name gen_files_mcp gen_files_mcp ghcr.io/baronco/genfilesmcp:v0.2.0
+docker run -d --restart unless-stopped -p YOUR_PORT:YOUR_PORT \
+  -e OWUI_URL="http://host.docker.internal:3000" \
+  -e PORT=YOUR_PORT \
+  -e ENABLE_CREATE_KNOWLEDGE=false \
+  --name gen_files_mcp \
+  ghcr.io/baronco/genfilesmcp:v0.2.1
 ```
 
 Alternatively, use the `:latest` tag for the most recent version:
 
 ```bash
-docker run -d --restart unless-stopped -p YOUR_PORT:YOUR_PORT -e OWUI_URL="http://host.docker.internal:3000" -e PORT=YOUR_PORT --name gen_files_mcp gen_files_mcp ghcr.io/baronco/genfilesmcp:latest
+docker run -d --restart unless-stopped -p YOUR_PORT:YOUR_PORT \
+  -e OWUI_URL="http://host.docker.internal:3000" \
+  -e PORT=YOUR_PORT \
+  -e ENABLE_CREATE_KNOWLEDGE=false \
+  --name gen_files_mcp \
+  ghcr.io/baronco/genfilesmcp:latest
 ```
 
 ### Option 2: Building from Source
@@ -88,6 +98,7 @@ docker run -d --restart unless-stopped \
   -p YOUR_PORT:YOUR_PORT \
   -e OWUI_URL="http://host.docker.internal:3000" \
   -e PORT=YOUR_PORT \
+  -e ENABLE_CREATE_KNOWLEDGE=false \
   --name gen_files_mcp \
   genfilesmcp
 ```
@@ -102,6 +113,7 @@ The MCP server requires the following environment variables:
 |----------|-------------|---------|
 | `OWUI_URL` | URL of your Open Web UI instance | `http://host.docker.internal:3000` |
 | `PORT` | Port where the MCP server will listen | `8015` |
+| `ENABLE_CREATE_KNOWLEDGE` | Controls whether generated or reviewed files are automatically added to users' knowledge collections. Set to `true` to enable automatic creation/updating of knowledge collections; set to `false` to disable that behavior and preserve RAG workflows (recommended default for RAG users). NOTE: If `ENABLE_CREATE_KNOWLEDGE=true`, it is mandatory to enable the Open Web UI document option `Bypass Embedding and Retrieval`. | `false` |
 
 ### MCP Configuration in Open Web UI
 
@@ -202,7 +214,11 @@ This version integrates with Open Web UI's knowledge base system:
 
 ### MCP Server Document Upload Settings
 
-To ensure that the upload of documents generated or reviewed by AI via the MCP server works for users or administrators, the `'Bypass Embedding and Retrieval'` option must be `enabled` in the Document options. Currently, I don't find an explanation of why, but to manage the knowledge of generated documents, it must be done.
+To support automatic creation of knowledge collections for files generated or reviewed by the MCP server, the Open Web UI document option `Bypass Embedding and Retrieval` must be enabled. This is required only when `ENABLE_CREATE_KNOWLEDGE=true`.
+
+Behavior summary:
+- If `ENABLE_CREATE_KNOWLEDGE=false` (default recommended for RAG users): The MCP server will NOT create or update knowledge collections for generated/reviewed files. Users who rely on RAG or do not want knowledge collections created can keep this setting disabled and do NOT enable `Bypass Embedding and Retrieval`. Users will still be able to download generated/reviewed files from their chats as before.
+- If `ENABLE_CREATE_KNOWLEDGE=true`: The MCP server will attempt to create/update per-user knowledge collections for generated/reviewed files. In this mode, you MUST enable `Bypass Embedding and Retrieval` in the Open Web UI document options so the knowledge creation/upload flow works correctly.
 
 <div style="text-align: center;">
 
