@@ -23,7 +23,7 @@ def transform_list_of_knowledge_to_dict(knowledge_list: list) -> dict:
         user_id = element['user_id']
         knowledge_id = element['id']
         knowledge_name = element['name']
-        files_ids = element.get('data', []).get('file_ids',[])
+        files_ids = element.get('data', {}).get('file_ids',[])
         
         # Main key is user_id, secondary key is knowledge_name
         knowledge_new_dict[user_id][knowledge_name] = {
