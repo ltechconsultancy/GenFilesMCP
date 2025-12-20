@@ -17,3 +17,5 @@ dependencies = [
 
 [project.scripts]
 genfilesmcp = "server.server:main"
+
+[tool.setuptools.packages.find]
