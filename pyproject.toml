@@ -21,4 +21,4 @@ genfilesmcp = "server.server:main"
 [tool.setuptools.packages.find]
 
 [tool.setuptools.package-data]
-"*" = ["src/*.md"]
+"src" = ["*.md"]

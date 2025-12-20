@@ -2,7 +2,7 @@
 Utility functions for loading Markdown templates from files.
 """
 
-from pathlib import Path
+from importlib import resources
 
 def load_md_templates() -> tuple[str, str, str, str, str]:
     """
@@ -14,23 +14,20 @@ def load_md_templates() -> tuple[str, str, str, str, str]:
     """
 
     try:
-        # Get the base path relative to this file
-        base_path = Path(__file__).parent.parent
-
-        # Load Markdown template files
-        with open(base_path / "src" / "powerpoint.md", "r", encoding="utf-8") as f:
+        # Load Markdown template files using importlib.resources
+        with resources.files("src").joinpath("powerpoint.md").open("r", encoding="utf-8") as f:
             POWERPOINT_TEMPLATE = f.read()
 
-        with open(base_path / "src" / "excel.md", "r", encoding="utf-8") as f:
+        with resources.files("src").joinpath("excel.md").open("r", encoding="utf-8") as f:
             EXCEL_TEMPLATE = f.read()
 
-        with open(base_path / "src" / "word.md", "r", encoding="utf-8") as f:
+        with resources.files("src").joinpath("word.md").open("r", encoding="utf-8") as f:
             WORD_TEMPLATE = f.read()
 
-        with open(base_path / "src" / "markdown.md", "r", encoding="utf-8") as f:
+        with resources.files("src").joinpath("markdown.md").open("r", encoding="utf-8") as f:
             MARKDOWN_TEMPLATE = f.read()
 
-        with open(base_path / "src" / "mcp_instructions.md", "r", encoding="utf-8") as f:
+        with resources.files("src").joinpath("mcp_instructions.md").open("r", encoding="utf-8") as f:
             MCP_INSTRUCTIONS = f.read()
 
         return (
