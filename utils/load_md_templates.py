@@ -14,20 +14,23 @@ def load_md_templates() -> tuple[str, str, str, str, str]:
     """
 
     try:
+        # Get the base path relative to this file
+        base_path = Path(__file__).parent.parent
+
         # Load Markdown template files
-        with open(Path("src","powerpoint.md"), "r", encoding="utf-8") as f:
+        with open(base_path / "src" / "powerpoint.md", "r", encoding="utf-8") as f:
             POWERPOINT_TEMPLATE = f.read()
 
-        with open(Path("src","excel.md"), "r", encoding="utf-8") as f:
+        with open(base_path / "src" / "excel.md", "r", encoding="utf-8") as f:
             EXCEL_TEMPLATE = f.read()
 
-        with open(Path("src","word.md"), "r", encoding="utf-8") as f:
+        with open(base_path / "src" / "word.md", "r", encoding="utf-8") as f:
             WORD_TEMPLATE = f.read()
 
-        with open(Path("src","markdown.md"), "r", encoding="utf-8") as f:
+        with open(base_path / "src" / "markdown.md", "r", encoding="utf-8") as f:
             MARKDOWN_TEMPLATE = f.read()
 
-        with open(Path("src","mcp_instructions.md"), "r", encoding="utf-8") as f:
+        with open(base_path / "src" / "mcp_instructions.md", "r", encoding="utf-8") as f:
             MCP_INSTRUCTIONS = f.read()
 
         return (
