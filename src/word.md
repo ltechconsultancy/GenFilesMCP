@@ -41,3 +41,5 @@ doc.save(DOCX_BUFFER) # Do not modify this line, it is defined in the server.py 
 ```
 
 Provide a complete Python script following this template to generate your Word document. 
+
+This tool return a markdown hyperlink for download: `[Download {filename}.{ext}](/api/v1/files/{id}/content)`. The path must be immutable; only {id} is dynamic. If the assistant modifies this output, users cannot download generated or reviewed files.

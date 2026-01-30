@@ -21,7 +21,7 @@ def load_md_templates() -> tuple[str, str, str, str, str]:
         with resources.files("src").joinpath("excel.md").open("r", encoding="utf-8") as f:
             EXCEL_TEMPLATE = f.read()
 
-        with resources.files("src").joinpath("word.md").open("r", encoding="utf-8") as f:
+        with resources.files("src").joinpath("word_template.md").open("r", encoding="utf-8") as f:
             WORD_TEMPLATE = f.read()
 
         with resources.files("src").joinpath("markdown.md").open("r", encoding="utf-8") as f:

@@ -20,3 +20,5 @@ MD_BUFFER.write(markdown_content.encode('utf-8'))
 ```
 
 Provide a complete Python script following this template to generate your Markdown document.
+
+This tool return a markdown hyperlink for download: `[Download {filename}.{ext}](/api/v1/files/{id}/content)`. The path must be immutable; only {id} is dynamic. If the assistant modifies this output, users cannot download generated or reviewed files.

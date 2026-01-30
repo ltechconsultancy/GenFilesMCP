@@ -10,7 +10,7 @@ It also includes tools for analyzing and reviewing existing documents.
 from json import dumps
 from os import getenv
 from datetime import datetime
-from typing import Annotated, Literal, List, Tuple, Optional, Union, Any
+from typing import Annotated, Literal, List, Tuple, Union, Any
 from enum import Enum
 from pathlib import Path
 from io import BytesIO
@@ -60,12 +60,12 @@ class ImagesList(BaseModel):
 
 # General Cover 
 class Cover(BaseModel):
-    title: str
-    subtitle: str
-    description: str
-    author: str
-    month: str
-    year: str
+    title: str = "Document Title"
+    subtitle: str = ""
+    description: str = "Document Description"
+    author: str = "Author Name"
+    month: str = "January"
+    year: str = "2024"
     page_break: bool = False
 
 # class Paragraph(BaseModel):
@@ -75,21 +75,21 @@ class Cover(BaseModel):
 #     alignment: str = "justify"
 
 class ListItem(BaseModel):
-    style: Literal['List Number', 'List Bullet'] = "List Bullet"  # e.g., "bullet" or "number"
+    list_style: Literal['List Number', 'List Bullet'] = "List Bullet"  # e.g., "bullet" or "number"
     items: List[str] = ["Item 1", "Item 2", "Item 3"]
     # alignment: Optional[str] = None
 
 class Table(BaseModel):
     headers: List[str] = ["Header 1", "Header 2", "Header 3"]
     rows: List[List[str]] = [["Row 1 Col 1", "Row 1 Col 2", "Row 1 Col 3"]]
-    caption: Optional[str] = "Table 1 Caption"
+    caption: str = "Table 1 Caption"
 
 class Image(BaseModel):
     id: str = None
     # width: float = 4.0
     # height: float = 3.0
     # alignment: Optional[str] = None
-    caption: Optional[str] = "Fig. 1. Caption"
+    caption: str = "Fig. 1. Caption"
 
     # @model_validator(mode='before')
     # @classmethod
@@ -101,36 +101,24 @@ class Image(BaseModel):
 
 class Equation(BaseModel):
     latex: str
-    caption: Optional[str] = "Equation 1 Caption"
-
-# class Section(BaseModel):
-#     title: str = ""
-#     level: Literal[1,2,3,4,5,6] = 2
-#     alignment: str = "center"
-#     columns: int = None
-#     paragraph: Paragraph
-#     list: ListItem = None
-#     table: Table = None
-#     image: Image = None
-#     equation: Equation = None
+    caption: str = "Equation 1 Caption"
 
 class ParagraphHeader(BaseModel):
-    title: str = "Example Header"
+    paragraph_title: str
     level: Literal[1,2,3,4,5,6] = 2
-    alignment: str = "center"
+    # alignment: str = "center"
 
 class ParagraphBody(BaseModel):
-    text: str = ""
+    paragraph_text: str = ""
     # bold: bool = False
     # italic: bool = False
-    alignment: str = "justify"
+    # alignment: str = "justify"
 
 class WordsWithBoldOrItalic(BaseModel):
-    text: str = ""
+    bold_italic_text: str = ""
     bold: bool = False
     italic: bool = False
-    alignment: str = "justify"
-
+    # alignment: str = "justify"
 
 # class DocumentDict(BaseModel):
 #     font: str = "Times New Roman"
@@ -180,7 +168,7 @@ async def generate_excel(
 # @mcp.tool(
 #     name="generate_word",
 #     title="Generate Word document",
-#     description=WORD_TEMPLATE,
+#     description=WORD_TEMPLATE, 
 #     annotations=ToolAnnotations(destructiveHint=False)
 # )
 # async def generate_word(
@@ -197,19 +185,34 @@ async def generate_excel(
 @mcp.tool(
     name="generate_word",
     title="Generate Word document",
-    description="Generate a Word document from metadata and a list of document elements including headings, paragraphs, lists, tables, images, and equations.",
+    description=WORD_TEMPLATE,
     annotations=ToolAnnotations(destructiveHint=False)
 )
 async def generate_word_from_dict(
     ctx: Context[ServerSession, None],
-    doc_metadata: Annotated[Cover, Field(description="Document title, subtitle, description, author, and date.")],
-    columns_body: Annotated[int, Field(description="Number of columns for the body sections (1 or 2).")],
-    doc_dict: Annotated[List[Union[ParagraphHeader, ParagraphBody, WordsWithBoldOrItalic, ListItem, Table, Image, Equation]], Field(description="List of document elements for the body: headings (section titles), paragraphs (plain text; use '\\n\\n' for paragraph breaks), words (with bold/italic), lists (numbered or bulleted), tables (with headers and rows), images (with captions), equations (in LaTeX).")],
+    document_cover: Annotated[Cover, Field(description="This argument defines the cover page of the document. Document cover set page_break to True for generating general reports and False for academic papers.")],
+    columns_body: Annotated[int, Field(description="This argument defines the number of columns in the document body. Set to 1 for single column or 2 for double column layout for academic papers.")],
+    document_body_elements: Annotated[
+        List[
+            Union[
+                ParagraphHeader, 
+                ParagraphBody, 
+                WordsWithBoldOrItalic, 
+                ListItem, 
+                Table, 
+                Image, 
+                Equation
+            ]
+        ], 
+        Field(
+            description="This argument defines the body elements of the document. The order of elements in the list defines the order in the document body."
+            )
+    ],
     file_name: Annotated[str, Field(description=ARGUMENT_DESCRIPTIONS["common_args"]["file_name"])]):
     """
     Generate a Word document from metadata and a list of document elements.
     """
-    return _generate_word_from_template(doc_metadata, columns_body, doc_dict, file_name, ctx, URL, ENABLE_CREATE_KNOWLEDGE)
+    return _generate_word_from_template(document_cover, columns_body, document_body_elements, file_name, ctx, URL, ENABLE_CREATE_KNOWLEDGE)
 
 # Mcp tool definitions
 @mcp.tool(

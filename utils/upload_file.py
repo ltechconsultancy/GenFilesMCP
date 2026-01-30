@@ -51,9 +51,10 @@ def upload_file(url: str, token: str, file_data: BytesIO, filename:str, file_typ
     if response.status_code != 200:
        return dumps({"error":{"message": f'Error uploading file: {response.status_code}, {response.text}'}}), response
     elif response.status_code == 200:
+        response_path_download = f"Download the generated file using the following markdown hyperlink format `[Download {filename}.{file_type}](/api/v1/files/{response.json()['id']}/content)`. If you modify this hyperlink users will not be able to download the file."
         return dumps({
-            "file_path_download": f"[Download {filename}.{file_type}](/api/v1/files/{response.json()['id']}/content)"
+            "file_path_download": response_path_download,#f"[Download {filename}.{file_type}](/api/v1/files/{response.json()['id']}/content)"
             },
             indent=4,
             ensure_ascii=False
-        ), response.json()
+        ), response.json() 

@@ -144,25 +144,26 @@ def build_docx_from_dict(doc_dict, buffer, ctx, URL):
     
     # Procesar elementos
     for item in sections_data:
-        if "title" in item and "level" in item:  # ParagraphHeader
+        if "paragraph_title" in item and "level" in item:  # ParagraphHeader
             current_paragraph = None  # Reset paragraph
-            heading = doc.add_heading(item["title"], level=item.get("level", 2))
-            if item.get("alignment") == "center":
-                heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            heading = doc.add_heading(item["paragraph_title"], level=item.get("level", 2))
+            # if item.get("alignment") == "center":
+            #     heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
             if heading.runs:
                 heading.runs[0].font.name = font
         
-        elif "text" in item:  # ParagraphBody
+        elif "paragraph_text" in item or "bold_italic_text" in item:  # ParagraphBody
             if current_paragraph is None:
                 current_paragraph = doc.add_paragraph()
                 # Set alignment for the paragraph based on the first ParagraphBody
-                if item.get("alignment") == "center":
-                    current_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                elif item.get("alignment") == "justify":
-                    current_paragraph.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+                # if item.get("alignment") == "center":
+                #     current_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                # elif item.get("alignment") == "justify":
+                current_paragraph.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY 
                 # Default is left
             # Add run to the current paragraph
-            run = current_paragraph.add_run(item["text"])
+            run = current_paragraph.add_run(item.get("paragraph_text", "") + item.get("bold_italic_text", ""))
             run.bold = item.get("bold", False)
             run.italic = item.get("italic", False)
             run.font.size = Inches(12 / 72)
@@ -171,7 +172,7 @@ def build_docx_from_dict(doc_dict, buffer, ctx, URL):
         elif "items" in item:  # ListItem
             current_paragraph = None  # Reset paragraph
             for it in item["items"]:
-                p = doc.add_paragraph(it, style='List Bullet' if item.get("style") == "List Bullet" else 'List Number')
+                p = doc.add_paragraph(it, style='List Bullet' if item.get("list_style") == "List Bullet" else 'List Number')
                 if p.runs:
                     p.runs[0].font.name = font
         
