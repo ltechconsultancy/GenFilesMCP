@@ -13,9 +13,6 @@ from utils.authorization import _get_bearer_token
 logger = get_logger(__name__)
 
 
-def build_review_knowledge_name(knowledge_name, reviewer_ai_assistant_name):
-    return f"{knowledge_name} Reviewed by {reviewer_ai_assistant_name}"
-
 def full_context_docx(file_id, file_name, request, URL):
     """
     Return the structure of a DOCX document including index, style, and text of each element.
@@ -117,7 +114,7 @@ def review_docx(file_id, file_name, review_comments, request, URL, ENABLE_CREATE
                 token=bearer_token,
                 file_id=request_data['id'],
                 user_id=user_id,
-                knowledge_name=build_review_knowledge_name(knowledge_name, REVIEWER_AI_ASSISTANT_NAME)
+                knowledge_name=knowledge_name
             )
             if create_knowledge_status:
                 logger.info("=> Knowledge base updated successfully.")
