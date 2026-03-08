@@ -35,7 +35,7 @@ def get_user_id(url: str, token: str) -> str | None:
 
     try:
         resp = get(endpoint, headers=headers, timeout=10)
-    except Exception:
+    except Exception: 
         logger.error("=> Error retrieving user id.")
         return None
 

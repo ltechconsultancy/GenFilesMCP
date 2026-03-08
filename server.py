@@ -1,7 +1,7 @@
 # Native libraries
 from json import dumps
 from os import getenv
-from typing import Annotated, Literal, List, Tuple, Union, Any, Optional
+from typing import Annotated, Literal, List, Tuple, Union, Any
 from pydantic import Field
 
 # Third-party libraries
@@ -38,6 +38,7 @@ PORT = int(getenv('PORT', '8000'))
 MCP_TRANSPORT = getenv('MCP_TRANSPORT', 'streamable-http').strip().lower()
 OWUI_API_KEY = (getenv('OWUI_API_KEY') or '').strip() or None
 REVIEWER_AI_ASSISTANT_NAME = getenv('REVIEWER_AI_ASSISTANT_NAME', 'GenFilesMCP')
+KNOWLEDGE_COLLECTION_NAME = getenv('KNOWLEDGE_COLLECTION_NAME', 'My Generated Files').strip()
 POWERPOINT_TEMPLATE, EXCEL_TEMPLATE, WORD_TEMPLATE, MARKDOWN_TEMPLATE, MCP_INSTRUCTIONS = load_md_templates(ENABLE_WORD_ELEMENT_FILLING)
 ENABLE_CREATE_KNOWLEDGE = getenv('ENABLE_CREATE_KNOWLEDGE', 'true').lower() == 'true'
 
@@ -72,7 +73,14 @@ async def generate_powerpoint(
     try:
         # headers
         request = build_request_context()
-        return _generate_powerpoint(body.python_script, body.file_name, request, OWUI_URL, ENABLE_CREATE_KNOWLEDGE)
+        return _generate_powerpoint(
+            body.python_script,
+            body.file_name,
+            request,
+            OWUI_URL,
+            ENABLE_CREATE_KNOWLEDGE,
+            KNOWLEDGE_COLLECTION_NAME
+        )
     except Exception as e:
         logger.error(f"Error generating PowerPoint presentation: {e}")
         return dumps({"error": "An error occurred while generating the PowerPoint presentation."}, ensure_ascii=False)
@@ -90,7 +98,14 @@ async def generate_excel(
     try:
         # headers
         request = build_request_context()
-        return _generate_excel(body.python_script, body.file_name, request, OWUI_URL, ENABLE_CREATE_KNOWLEDGE)
+        return _generate_excel(
+            body.python_script,
+            body.file_name,
+            request,
+            OWUI_URL,
+            ENABLE_CREATE_KNOWLEDGE,
+            KNOWLEDGE_COLLECTION_NAME
+        )
     except Exception as e:
         logger.error(f"Error generating Excel workbook: {e}")
         return dumps({"error": "An error occurred while generating the Excel workbook."}, ensure_ascii=False)
@@ -107,7 +122,14 @@ async def generate_markdown(
     logger.info("Received request to generate Markdown document")
     try:
         request = build_request_context()
-        return _generate_markdown(body.python_script, body.file_name, request, OWUI_URL, ENABLE_CREATE_KNOWLEDGE)
+        return _generate_markdown(
+            body.python_script,
+            body.file_name,
+            request,
+            OWUI_URL,
+            ENABLE_CREATE_KNOWLEDGE,
+            KNOWLEDGE_COLLECTION_NAME
+        )
     except Exception as e:
         logger.error(f"Error generating Markdown document: {e}")
         return dumps({"error": "An error occurred while generating the Markdown document."}, ensure_ascii=False)
@@ -125,7 +147,16 @@ async def generate_word_structured(
        
         # headers
         request = build_request_context()
-        return _generate_word_from_template(body.document_cover, body.columns_body, all_elements, body.file_name, request, OWUI_URL, ENABLE_CREATE_KNOWLEDGE)
+        return _generate_word_from_template(
+            body.document_cover,
+            body.columns_body,
+            all_elements,
+            body.file_name,
+            request,
+            OWUI_URL,
+            ENABLE_CREATE_KNOWLEDGE,
+            KNOWLEDGE_COLLECTION_NAME
+        )
     except Exception as e:
         logger.error(f"Error generating Word document: {e}")
         return dumps({"error": "An error occurred while generating the Word document."}, ensure_ascii=False)
@@ -140,7 +171,15 @@ async def generate_word(
     """
     # headers
     request = build_request_context()
-    return _generate_word(python_script, file_name, images_list, request, OWUI_URL, ENABLE_CREATE_KNOWLEDGE)
+    return _generate_word(
+        python_script,
+        file_name,
+        images_list,
+        request,
+        OWUI_URL,
+        ENABLE_CREATE_KNOWLEDGE,
+        KNOWLEDGE_COLLECTION_NAME
+    )
 
 
 register_word_tool(
@@ -184,7 +223,16 @@ async def review_docx(
     try:
         # headers
         request = build_request_context()
-        return _review_docx(body.file_id, body.file_name, body.review_comments, request, OWUI_URL, ENABLE_CREATE_KNOWLEDGE, REVIEWER_AI_ASSISTANT_NAME)
+        return _review_docx(
+            body.file_id,
+            body.file_name,
+            body.review_comments,
+            request,
+            OWUI_URL,
+            ENABLE_CREATE_KNOWLEDGE,
+            REVIEWER_AI_ASSISTANT_NAME,
+            KNOWLEDGE_COLLECTION_NAME
+        )
     except Exception as e:
         logger.error(f"Error reviewing DOCX document: {e}")
         return dumps({"error": "An error occurred while reviewing the DOCX document."}, ensure_ascii=False)

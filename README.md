@@ -38,13 +38,15 @@ GenFiles is an MCP Server that generates PowerPoint, Excel, Word, or Markdown fi
 
 ## Status
 
-This release is **v0.3.0-alpha.6** and was tested with Open Web UI v0.8.1: [Open Web UI GitHub Repository](https://github.com/open-webui/open-webui)
+This release is **v0.3.0-alpha.8** and was tested with Open Web UI v0.8.1: [Open Web UI GitHub Repository](https://github.com/open-webui/open-webui)
 
-**Important compatibility note:** this alpha requires **Open Web UI v0.6.42 or later** (the knowledge API changed to a paginated `/api/v1/knowledge/search` endpoint). For Open Web UI versions earlier than v0.6.42, use previous GenFiles releases **<= 0.2.2**. In recent versions of Open Web UI you could use GenFiles MCP Server v0.3.0-alpha.6 with limited functionality (without knowledge base integration) by setting `ENABLE_CREATE_KNOWLEDGE=false` 🚨 
+**Important compatibility note:** this alpha requires **Open Web UI v0.6.42 or later** (the knowledge API changed to a paginated `/api/v1/knowledge/search` endpoint). For Open Web UI versions earlier than v0.6.42, use previous GenFiles releases **<= 0.2.2**. In recent versions of Open Web UI you could use GenFiles MCP Server v0.3.0-alpha.8 with limited functionality (without knowledge base integration) by setting `ENABLE_CREATE_KNOWLEDGE=false` 🚨 
 
 **This MCP server requires Open Web UI v0.6.31 or later for native MCP support** 
 
 The `ENABLE_CREATE_KNOWLEDGE` variable lets deployments choose whether generated or reviewed files are automatically added to users' knowledge collections. The original behavior (downloading files from chats) remains unchanged for end users.
+
+The base knowledge collection name is controlled by `KNOWLEDGE_COLLECTION_NAME` in both `streamable-http` and `stdio` modes.
 
 ## Prerequisites
 
@@ -59,7 +61,7 @@ The `ENABLE_CREATE_KNOWLEDGE` variable lets deployments choose whether generated
 Pull the pre-built Docker image from GitHub Container Registry:
 
 ```bash
-docker pull ghcr.io/baronco/genfilesmcp:v0.3.0-alpha.6
+docker pull ghcr.io/baronco/genfilesmcp:v0.3.0-alpha.8
 ```
 
 Run the container:
@@ -68,16 +70,17 @@ Run the container:
 docker run -d --restart unless-stopped -p YOUR_PORT:YOUR_PORT \
   -e OWUI_URL="http://host.docker.internal:3000" \
   -e PORT=YOUR_PORT \
+  -e KNOWLEDGE_COLLECTION_NAME="My Generated Files" \
   -e REVIEWER_AI_ASSISTANT_NAME="GenFilesMCP" \
   -e ENABLE_CREATE_KNOWLEDGE=false \
   --name gen_files_mcp \
-  ghcr.io/baronco/genfilesmcp:v0.3.0-alpha.6
+  ghcr.io/baronco/genfilesmcp:v0.3.0-alpha.8
 ```
 
 One-line command (copy/paste):
 
 ```bash
-docker run -d --restart unless-stopped -p 8016:8016 -e OWUI_URL="http://host.docker.internal:3000" -e PORT=8016 -e REVIEWER_AI_ASSISTANT_NAME="GenFilesMCP" -e ENABLE_CREATE_KNOWLEDGE=false --name gen_files_mcp ghcr.io/baronco/genfilesmcp:v0.3.0-alpha.6
+docker run -d --restart unless-stopped -p 8016:8016 -e OWUI_URL="http://host.docker.internal:3000" -e PORT=8016 -e KNOWLEDGE_COLLECTION_NAME="My Generated Files" -e REVIEWER_AI_ASSISTANT_NAME="GenFilesMCP" -e ENABLE_CREATE_KNOWLEDGE=false --name gen_files_mcp ghcr.io/baronco/genfilesmcp:v0.3.0-alpha.8
 ```
 
 Alternatively, use the `:latest` tag for the most recent version:
@@ -86,6 +89,7 @@ Alternatively, use the `:latest` tag for the most recent version:
 docker run -d --restart unless-stopped -p YOUR_PORT:YOUR_PORT \
   -e OWUI_URL="http://host.docker.internal:3000" \
   -e PORT=YOUR_PORT \
+  -e KNOWLEDGE_COLLECTION_NAME="My Generated Files" \
   -e REVIEWER_AI_ASSISTANT_NAME="GenFilesMCP" \
   -e ENABLE_CREATE_KNOWLEDGE=false \
   --name gen_files_mcp \
@@ -95,7 +99,7 @@ docker run -d --restart unless-stopped -p YOUR_PORT:YOUR_PORT \
 One-line command (copy/paste):
 
 ```bash
-docker run -d --restart unless-stopped -p 8016:8016 -e OWUI_URL="http://host.docker.internal:3000" -e PORT=8016 -e REVIEWER_AI_ASSISTANT_NAME="GenFilesMCP" -e ENABLE_CREATE_KNOWLEDGE=false --name gen_files_mcp ghcr.io/baronco/genfilesmcp:latest
+docker run -d --restart unless-stopped -p 8016:8016 -e OWUI_URL="http://host.docker.internal:3000" -e PORT=8016 -e KNOWLEDGE_COLLECTION_NAME="My Generated Files" -e REVIEWER_AI_ASSISTANT_NAME="GenFilesMCP" -e ENABLE_CREATE_KNOWLEDGE=false --name gen_files_mcp ghcr.io/baronco/genfilesmcp:latest
 ```
 
 ### Option 2: Building from Source
@@ -122,6 +126,7 @@ docker run -d --restart unless-stopped \
   -p YOUR_PORT:YOUR_PORT \
   -e OWUI_URL="http://host.docker.internal:3000" \
   -e PORT=YOUR_PORT \
+  -e KNOWLEDGE_COLLECTION_NAME="My Generated Files" \
   -e REVIEWER_AI_ASSISTANT_NAME="GenFilesMCP" \
   -e ENABLE_CREATE_KNOWLEDGE=false \
   --name gen_files_mcp \
@@ -151,6 +156,7 @@ services:
       dockerfile: Dockerfile
     container_name: gen_files_mcp
     environment:
+      - KNOWLEDGE_COLLECTION_NAME=My Generated Files
       - REVIEWER_AI_ASSISTANT_NAME=GenFilesMCP
       - ENABLE_CREATE_KNOWLEDGE=false
       - OWUI_URL=http://open-webui:8080
@@ -165,6 +171,7 @@ services:
     image: ghcr.io/baronco/genfilesmcp:latest
     container_name: gen_files_mcp
     environment:
+      - KNOWLEDGE_COLLECTION_NAME=My Generated Files
       - REVIEWER_AI_ASSISTANT_NAME=GenFilesMCP
       - ENABLE_CREATE_KNOWLEDGE=false
       - OWUI_URL=http://open-webui:8080
@@ -189,7 +196,8 @@ The MCP Server requires the following environment variables:
 | `PORT` | Port where the MCP Server will listen | `8016` |
 | `MCP_TRANSPORT` | MCP transport used at startup. Use `streamable-http` for HTTP deployments such as Open WebUI external tools, or `stdio` for local MCP clients launched with `uvx`. | `streamable-http` |
 | `OWUI_API_KEY` | Optional API key used to authenticate directly against Open Web UI when no incoming HTTP authorization header is available. When defined, it takes precedence over forwarded request headers. | `` |
-| `REVIEWER_AI_ASSISTANT_NAME` | Default assistant name used when adding review comments in DOCX files. | `GenFilesMCP` |
+| `KNOWLEDGE_COLLECTION_NAME` | Base name for the Open WebUI knowledge collection created for generated files. This value is also used as the base name for reviewed DOCX collections. | `My Generated Files` |
+| `REVIEWER_AI_ASSISTANT_NAME` | Default assistant name used when adding review comments in DOCX files. For reviewed DOCX knowledge collections, the final collection name becomes `{KNOWLEDGE_COLLECTION_NAME} Reviewed by {REVIEWER_AI_ASSISTANT_NAME}`. | `GenFilesMCP` |
 | `ENABLE_CREATE_KNOWLEDGE` | Controls whether generated or reviewed files are automatically added to users' knowledge collections. Set to `true` to enable automatic creation/updating of knowledge collections; set to `false` to disable that behavior. | `false` |
 
 ### MCP Server Configuration in Open Web UI
@@ -212,7 +220,7 @@ The recomended way to use the GenFiles MCP Server is with `Native Mode (Built-in
 
 The repository now exposes a console command named `genfilesmcp`, so it can be launched directly from Git with `uvx`.
 
-The example below is pinned to the `v0.3.0-alpha.6` tag.
+The example below is pinned to the `v0.3.0-alpha.8` tag.
 
 Example configuration:
 
@@ -222,7 +230,7 @@ Example configuration:
     "command": "uvx",
     "args": [
       "--from",
-      "git+https://github.com/Baronco/GenFilesMCP.git@v0.3.0-alpha.6",
+      "git+https://github.com/Baronco/GenFilesMCP.git@v0.3.0-alpha.8",
       "genfilesmcp"
     ],
     "env": {
@@ -230,6 +238,7 @@ Example configuration:
       "OWUI_URL": "http://localhost:3000",
       "OWUI_API_KEY": "your_limited_api_key",
       "ENABLE_CREATE_KNOWLEDGE": "false",
+      "KNOWLEDGE_COLLECTION_NAME": "My Generated Files",
       "REVIEWER_AI_ASSISTANT_NAME": "GenFilesMCP"
     }
   }
@@ -314,8 +323,8 @@ This version integrates with Open Web UI's knowledge base system:
 </p>
 
 - **User Collections**: Each user will have two dedicated knowledge collections created automatically:
-  - "My Generated Files": Contains all documents generated by the user.
-  - "Documents Reviewed by AI": Contains all Word documents reviewed and commented on by the AI.
+  - `KNOWLEDGE_COLLECTION_NAME` (default: "My Generated Files"): Contains generated documents.
+  - `{KNOWLEDGE_COLLECTION_NAME} Reviewed by {REVIEWER_AI_ASSISTANT_NAME}`: Contains reviewed Word documents.
 - **Document Management**: Users can easily review, access, download, and delete their generated or reviewed documents from their knowledge base. Deleting a document from the knowledge base also removes it from the chats where it was generated.
 
 <p align="center">
@@ -327,6 +336,10 @@ This version integrates with Open Web UI's knowledge base system:
 Behavior summary:
 - If `ENABLE_CREATE_KNOWLEDGE=false`: The MCP Server will NOT create or update knowledge collections for generated/reviewed files. 
 - If `ENABLE_CREATE_KNOWLEDGE=true`: The MCP Server will create/update per-user knowledge collections for generated/reviewed files.
+
+Collection naming summary:
+- Generated files use `KNOWLEDGE_COLLECTION_NAME`.
+- Reviewed DOCX files use the same base name and append `Reviewed by {REVIEWER_AI_ASSISTANT_NAME}`.
 
 ## System Prompt for your AI Assistant
 
@@ -341,7 +354,7 @@ For optimal results, create a custom agent in Open Web UI:
 
 ### Example 1: Generating a DOCX file
 
-This new alpha version v0.3.0-alpha.6 includes improved DOCX generation capabilities for enhancing safety and robustness. Now AI assistants have to focus in the elements required for the document structure and not in the generation of the document using code blocks.
+This new alpha version v0.3.0-alpha.8 includes improved DOCX generation capabilities for enhancing safety and robustness. Now AI assistants have to focus in the elements required for the document structure and not in the generation of the document using code blocks.
 
 <p align="center">
   <img src="img/NewDocxGen.png" alt="Generating DOCX Example" />

@@ -12,6 +12,10 @@ from utils.authorization import _get_bearer_token
 
 logger = get_logger(__name__)
 
+
+def build_review_knowledge_name(knowledge_name, reviewer_ai_assistant_name):
+    return f"{knowledge_name} Reviewed by {reviewer_ai_assistant_name}"
+
 def full_context_docx(file_id, file_name, request, URL):
     """
     Return the structure of a DOCX document including index, style, and text of each element.
@@ -55,7 +59,7 @@ def full_context_docx(file_id, file_name, request, URL):
     except Exception as e:
         return dumps({"error": {"message": str(e)}}, indent=4, ensure_ascii=False)
 
-def review_docx(file_id, file_name, review_comments, request, URL, ENABLE_CREATE_KNOWLEDGE, REVIEWER_AI_ASSISTANT_NAME):
+def review_docx(file_id, file_name, review_comments, request, URL, ENABLE_CREATE_KNOWLEDGE, REVIEWER_AI_ASSISTANT_NAME, knowledge_name):
     """
     Review an existing DOCX document and add comments to specified elements.
 
@@ -113,7 +117,7 @@ def review_docx(file_id, file_name, review_comments, request, URL, ENABLE_CREATE
                 token=bearer_token,
                 file_id=request_data['id'],
                 user_id=user_id,
-                knowledge_name="Documents Reviewed by AI"
+                knowledge_name=build_review_knowledge_name(knowledge_name, REVIEWER_AI_ASSISTANT_NAME)
             )
             if create_knowledge_status:
                 logger.info("=> Knowledge base updated successfully.")
@@ -129,7 +133,7 @@ def review_docx(file_id, file_name, review_comments, request, URL, ENABLE_CREATE
     except Exception as e:
         return dumps({"error": {"message": str(e)}}, indent=4, ensure_ascii=False)
 
-def generate_word_from_template(doc_metadata, columns_body, doc_dict, file_name, request, URL, ENABLE_CREATE_KNOWLEDGE):
+def generate_word_from_template(doc_metadata, columns_body, doc_dict, file_name, request, URL, ENABLE_CREATE_KNOWLEDGE, knowledge_name):
     """
     Generate a Word document from metadata and a list of sections.
 
@@ -181,7 +185,8 @@ def generate_word_from_template(doc_metadata, columns_body, doc_dict, file_name,
                 url=URL,
                 token=bearer_token,
                 file_id=request_data['id'], 
-                user_id=user_id
+                user_id=user_id,
+                knowledge_name=knowledge_name
             )
             if create_knowledge_status:
                 logger.info("=> Knowledge base updated successfully.")
@@ -198,7 +203,7 @@ def generate_word_from_template(doc_metadata, columns_body, doc_dict, file_name,
         logger.error("=> An unknown error occurred during DOCX document generation.")
         return dumps({"error": {"message": str(e)}}, indent=4, ensure_ascii=False)
 
-def generate_word(python_script, file_name, images_list, ctx, URL, ENABLE_CREATE_KNOWLEDGE):
+def generate_word(python_script, file_name, images_list, ctx, URL, ENABLE_CREATE_KNOWLEDGE, knowledge_name):
     """
     Generate a Word document using an AI-generated Python script.
 
@@ -252,7 +257,8 @@ def generate_word(python_script, file_name, images_list, ctx, URL, ENABLE_CREATE
                 url=URL,
                 token=bearer_token,
                 file_id=request_data['id'],
-                user_id=user_id
+                user_id=user_id,
+                knowledge_name=knowledge_name
             )
             if create_knowledge_status:
                 logger.info("Knowledge base updated successfully.")

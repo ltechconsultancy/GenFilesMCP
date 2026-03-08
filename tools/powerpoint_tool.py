@@ -8,7 +8,7 @@ from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-def generate_powerpoint(python_script, file_name, request, URL, ENABLE_CREATE_KNOWLEDGE):
+def generate_powerpoint(python_script, file_name, request, URL, ENABLE_CREATE_KNOWLEDGE, knowledge_name):
     """
     Generate a PowerPoint file using an AI-generated Python script.
 
@@ -51,7 +51,8 @@ def generate_powerpoint(python_script, file_name, request, URL, ENABLE_CREATE_KN
                 url=URL,
                 token=bearer_token,
                 file_id=request_data['id'],
-                user_id=user_id
+                user_id=user_id,
+                knowledge_name=knowledge_name
             )
             if create_knowledge_status:
                 logger.info("=> Knowledge base updated successfully.")
