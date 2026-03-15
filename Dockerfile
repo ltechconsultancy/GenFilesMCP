@@ -2,11 +2,13 @@
 FROM python:3.13-slim-bookworm
 
 # Copy the UV binary from an external container to the /bin directory
-COPY --from=ghcr.io/astral-sh/uv:0.7.14 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.10.4 /uv /uvx /bin/
 
 # Install system dependencies including pandoc
 RUN apt-get update && apt-get install -y \
-    pandoc \
+    libreoffice \
+    libreoffice-writer \
+    --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory inside the container
@@ -17,8 +19,9 @@ COPY pyproject.toml ./
 COPY uv.lock ./
 
 # Copy template directorie into the container
-COPY template/ ./template/
+COPY src/ ./src/
 COPY utils/ ./utils/
+COPY tools/ ./tools/
 
 # Install dependencies using UV, leveraging cache for faster builds
 RUN --mount=type=cache,target=/root/.cache/uv \
@@ -31,5 +34,19 @@ COPY server.py .
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen
 
-# Set the default command to run the server using UV
+# Create an unprivileged user and ensure the application directory is owned by that user.
+# Build steps above run as root (needed for package installation). At runtime we drop to
+# the unprivileged `app` user to reduce risk from container compromise.
+RUN groupadd -r app \
+    && useradd -r -g app -d /home/app -m -s /bin/bash app \
+    && chown -R app:app /app
+
+# Set HOME and switch to the unprivileged user for runtime
+ENV HOME=/home/app
+USER app
+
+# Expose the API port
+# EXPOSE 8000
+
+# Set the default command to run the server script (which respects the PORT env var)
 CMD ["uv", "run", "server.py"]

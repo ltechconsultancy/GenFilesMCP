@@ -1,0 +1,27 @@
+This tool is designed to generate Word documents for reports or academic papers. The input required is a JSON object structured as follows:
+
+- `document_cover`: Metadata for the cover page, including the following fields:
+  - `title`: The title of the document.
+  - `subtitle`: An optional subtitle for additional context.
+  - `description`: A brief description of the document's purpose.
+  - `author`: The author's name.
+  - `month`: The month of publication (e.g., "January").
+  - `year`: The year of publication (e.g., "2024").
+  - `page_break`: A boolean indicating whether to start the body content on a new page.
+- `columns_body`: Specifies the number of columns in the document body. Acceptable values are `1` or `2`.
+- `document_elements`: An ordered list of elements that make up the document body.
+- `file_name`: The name of the output file (without the file extension).
+
+### Guidelines for Document Elements:
+
+Each element in the `document_elements` list must include a `type` field with one of the following values:
+
+- `ParagraphBody`: Used for regular paragraphs. **Do not use this type for headers, lists, tables, images, or equations**, as the backend will fail to generate the document.
+- `ParagraphHeader`: Used for section headers.
+- `ParagraphListItem`: Used for list items. Note that list items do **not support Markdown formatting** for bold or italic text. Do not use this type for equations.
+- `Table`: Used for tables.
+- `Image`: Used for images.
+- `Equation`: Used for equations.
+
+The final goal of this tool is to create a well-structured Word document, prioritizing the selection of the best logical order for the document and the correct element types so that the user can obtain a professionally formatted document that is easy to read and ready to be shared or published.
+

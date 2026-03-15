@@ -1,594 +1,263 @@
 # Native libraries
 from json import dumps
 from os import getenv
-from typing import Annotated, Literal, List, Tuple
-from enum import Enum
-from pathlib import Path
-from io import BytesIO
-import logging
-logging.basicConfig(level=logging.INFO, force=True)
-logger = logging.getLogger("GenFilesMCP")
+from typing import Annotated, Literal, List, Tuple, Union, Any
+from pydantic import Field
 
 # Third-party libraries
-from pydantic import Field, BaseModel
-from requests import post, get
-from mcp.server.fastmcp import FastMCP, Context
-from mcp.server.session import ServerSession
-from docx import Document
+from fastmcp import FastMCP,  Context
+from fastmcp.server.dependencies import get_http_headers
+import uvicorn
 
 # Utilities
+from utils.logger import configure_logging, get_logger
+configure_logging()
 from utils.load_md_templates import load_md_templates
-from utils.upload_file import upload_file
-from utils.download_file import download_file
-from utils.knowledge import create_knowledge
+from utils.register_tools import register_word_tool
+from utils.argument_descriptions import SERVER_BANNER, MCP_SERVER_NAME, SERVER_VERSION, ARGUMENT_DESCRIPTIONS
+from utils.generate_word_template_body_check import generate_word_template_body_check
+from utils.pydantic_models_endpoints import (
+    GeneratePowerPointRequest,
+    GenerateExcelRequest,
+    GenerateMarkdownRequest,
+    DocxBodyElements,
+    FullContextDocxRequest,
+    ReviewDocxRequest
+)
 
+# Import tools from the tools directory
+from tools.powerpoint_tool import generate_powerpoint as _generate_powerpoint
+from tools.excel_tool import generate_excel as _generate_excel
+from tools.markdown_tool import generate_markdown as _generate_markdown
+from tools.docx_tool import full_context_docx as _full_context_docx, review_docx as _review_docx, generate_word_from_template as _generate_word_from_template
+from tools.docx_tool import generate_word as _generate_word
 # Parameters
-URL = getenv('OWUI_URL',)
-PORT = int(getenv('PORT'))
-POWERPOINT_TEMPLATE, EXCEL_TEMPLATE, WORD_TEMPLATE,MARKDOWN_TEMPLATE, MCP_INSTRUCTIONS = load_md_templates()
-# Enable or disable automatic creation of knowledge collections after upload
-# Defaults to true to preserve existing behavior. Set to 'false' to disable.
+ENABLE_WORD_ELEMENT_FILLING = getenv('ENABLE_WORD_ELEMENT_FILLING', 'false').lower() == 'true' 
+OWUI_URL = getenv('OWUI_URL', 'http://localhost:8080')
+PORT = int(getenv('PORT', '8000'))
+MCP_TRANSPORT = getenv('MCP_TRANSPORT', 'streamable-http').strip().lower()
+OWUI_API_KEY = (getenv('OWUI_API_KEY') or '').strip() or None
+REVIEWER_AI_ASSISTANT_NAME = getenv('REVIEWER_AI_ASSISTANT_NAME', 'GenFilesMCP')
+KNOWLEDGE_COLLECTION_NAME = getenv('KNOWLEDGE_COLLECTION_NAME', 'My Generated Files').strip()
+POWERPOINT_TEMPLATE, EXCEL_TEMPLATE, WORD_TEMPLATE, MARKDOWN_TEMPLATE, MCP_INSTRUCTIONS = load_md_templates(ENABLE_WORD_ELEMENT_FILLING)
 ENABLE_CREATE_KNOWLEDGE = getenv('ENABLE_CREATE_KNOWLEDGE', 'true').lower() == 'true'
 
-# Pydantic model for review comments
-class ReviewComment(BaseModel):
-    index: int
-    comment: str
 
 # Initialize FastMCP server
 mcp = FastMCP(
-    name = "GenFilesMCP",
+    name = MCP_SERVER_NAME,
     instructions = MCP_INSTRUCTIONS,   
-    port = PORT,
-    host = "0.0.0.0"
 )
+
+# Configure Logging
+logger = get_logger(MCP_SERVER_NAME)
+
+
+def build_request_context() -> dict[str, dict[str, str] | str]:
+    if OWUI_API_KEY:
+        return {"headers": f"Bearer {OWUI_API_KEY}"}
+
+    return {"headers": get_http_headers()}
 
 @mcp.tool(
     name = "generate_powerpoint",
-    title = "Generate PowerPoint presentation",
+    title = "Generate PowerPoint",
     description = POWERPOINT_TEMPLATE
 )
 async def generate_powerpoint(
-    python_script: Annotated[
-        str, 
-        Field(description="Complete Python script that generates the PowerPoint presentation using the provided template.")
-    ],
-    file_name: Annotated[
-        str, 
-        Field(description="Desired name for the generated PowerPoint file without the extension.")
-    ],
-    user_id: Annotated[
-        str,
-        Field(description="User ID to associate the knowledge base with the correct user.")
-    ],
-    ctx: Context[ServerSession, None]
-) -> dict:
-    """
-    Generate a PowerPoint file using a Python script.
+    body: GeneratePowerPointRequest
+):
+    """Generates a PowerPoint presentation using a provided Python script."""
+    logger.info("Received request to generate PowerPoint presentation")
 
-    Returns:
-        dict: Contains 'file_path_download' with a markdown hyperlink for downloading the generated PowerPoint file.
-              Format: "[Download {filename}.pptx](/api/v1/files/{id}/content)"
-    """
     try:
-        # Create a buffer for the PowerPoint file
-        buffer = BytesIO()
-        buffer.name = f'{file_name}.pptx'
-        context = {"pptx_buffer": buffer}
-        exec(python_script, context)
-
-        # Reset buffer position to start
-        buffer.seek(0)
-
-        # Retrieve authorization header from the request context
-        try:
-            bearer_token = ctx.request_context.request.headers.get("authorization")
-            logger.info(f"Received authorization header!")
-        except:
-            logger.error(f"Error retrieving authorization header")
-
-        # Upload the generated PowerPoint file
-        response, request_data = upload_file(
-            url=URL, 
-            token=bearer_token, 
-            file_data=buffer,
-            filename=file_name,
-            file_type="pptx"
+        # headers
+        request = build_request_context()
+        return _generate_powerpoint(
+            body.python_script,
+            body.file_name,
+            request,
+            OWUI_URL,
+            ENABLE_CREATE_KNOWLEDGE,
+            KNOWLEDGE_COLLECTION_NAME
         )
-
-        # If upload is successful, add to knowledge base
-        if "file_path_download" in response and ENABLE_CREATE_KNOWLEDGE:
-            # create knowledge base if not exists
-            create_knowledge_status = create_knowledge(
-                url=URL, 
-                token=bearer_token,
-                file_id=request_data['id'],
-                user_id=user_id
-            )
-            if create_knowledge_status:
-                logger.info("Knowledge base updated successfully.")
-            else:
-                logger.error(f"Error creating or updating knowledge base")
-        elif "error" in response:
-            logger.error(f"Error uploading the file.")
-        else:
-            logger.info("Skipping knowledge creation because ENABLE_CREATE_KNOWLEDGE is false")
-
-        return response 
-    
     except Exception as e:
-        return dumps(
-            {
-                "error": {
-                    "message": str(e)
-                }
-            }, 
-            indent=4, 
-            ensure_ascii=False
-        )
+        logger.error(f"Error generating PowerPoint presentation: {e}")
+        return dumps({"error": "An error occurred while generating the PowerPoint presentation."}, ensure_ascii=False)
 
 @mcp.tool(
     name = "generate_excel",
-    title = "Generate Excel workbook",
+    title = "Generate Excel",
     description = EXCEL_TEMPLATE
 )
 async def generate_excel(
-    python_script: Annotated[
-        str, 
-        Field(description="Complete Python script that generates the Excel workbook using the provided template.")
-    ],
-    file_name: Annotated[
-        str, 
-        Field(description="Desired name for the generated Excel file without the extension.")
-    ],
-    user_id: Annotated[
-        str,
-        Field(description="User ID to associate the knowledge base with the correct user.")
-    ],
-    ctx: Context[ServerSession, None]
-) -> dict:
-    """
-    Generate an Excel file using a Python script.
-
-    Returns:
-        dict: Contains 'file_path_download' with a markdown hyperlink for downloading the generated Excel file.
-              Format: "[Download {filename}.xlsx](/api/v1/files/{id}/content)"
-    """
+    body: GenerateExcelRequest
+):
+    """Generates an Excel workbook using a provided Python script."""
+    logger.info("Received request to generate Excel workbook")
     try:
-        # Create a buffer for the Excel file
-        buffer = BytesIO()
-        buffer.name = f'{file_name}.xlsx'
-        context = {"xlsx_buffer": buffer}
-        exec(python_script, context)
-
-        # Reset buffer position to start
-        buffer.seek(0)
-
-        # Retrieve authorization header from the request context
-        try:
-            bearer_token = ctx.request_context.request.headers.get("authorization")
-            logger.info(f"Received authorization header!")
-        except:
-            logger.error(f"Error retrieving authorization header")
-
-        # Upload the generated Excel file
-        response, request_data = upload_file(
-            url=URL, 
-            token=bearer_token, 
-            file_data=buffer,
-            filename=file_name,
-            file_type="xlsx"
+        # headers
+        request = build_request_context()
+        return _generate_excel(
+            body.python_script,
+            body.file_name,
+            request,
+            OWUI_URL,
+            ENABLE_CREATE_KNOWLEDGE,
+            KNOWLEDGE_COLLECTION_NAME
         )
-
-        # If upload is successful, add to knowledge base
-        if "file_path_download" in response and ENABLE_CREATE_KNOWLEDGE:
-            # create knowledge base if not exists
-            create_knowledge_status = create_knowledge(
-                url=URL, 
-                token=bearer_token,
-                file_id=request_data['id'],
-                user_id=user_id
-            )
-            if create_knowledge_status:
-                logger.info("Knowledge base updated successfully.")
-            else:
-                logger.error(f"Error creating or updating knowledge base")
-        elif "error" in response:
-            logger.error(f"Error uploading the file.")
-        else:
-            logger.info("Skipping knowledge creation because ENABLE_CREATE_KNOWLEDGE is false")
-
-        return response 
-    
     except Exception as e:
-        return dumps(
-            {
-                "error": {
-                    "message": str(e)
-                }
-            }, 
-            indent=4, 
-            ensure_ascii=False
-        )
-
-@mcp.tool(
-    name = "generate_word",
-    title = "Generate Word document",
-    description = WORD_TEMPLATE
-)
-async def generate_word(
-    python_script: Annotated[
-        str, 
-        Field(description="Complete Python script that generates the Word document using the provided template.")
-    ],
-    file_name: Annotated[
-        str, 
-        Field(description="Desired name for the generated Word file without the extension.")
-    ],
-    user_id: Annotated[
-        str,
-        Field(description="User ID to associate the knowledge base with the correct user.")
-    ],
-    ctx: Context[ServerSession, None]
-) -> dict:
-    """
-    Generate a Word file using a Python script.
-
-    Returns:
-        dict: Contains 'file_path_download' with a markdown hyperlink for downloading the generated Word file.
-              Format: "[Download {filename}.docx](/api/v1/files/{id}/content)"
-    """
-    try:
-        # Create a buffer for the Word file
-        buffer = BytesIO()
-        buffer.name = f'{file_name}.docx'
-        context = {"docx_buffer": buffer}
-        exec(python_script, context)
-
-        # Reset buffer position to start
-        buffer.seek(0)
-
-        # Retrieve authorization header from the request context
-        try:
-            bearer_token = ctx.request_context.request.headers.get("authorization")
-            logger.info(f"Received authorization header!")
-        except:
-            logger.error(f"Error retrieving authorization header")
-
-        # Upload the generated Word file
-        response, request_data = upload_file(
-            url=URL, 
-            token=bearer_token, 
-            file_data=buffer,
-            filename=file_name,
-            file_type="docx"
-        )
-
-        # If upload is successful, add to knowledge base
-        if "file_path_download" in response and ENABLE_CREATE_KNOWLEDGE:
-            # create knowledge base if not exists
-            create_knowledge_status = create_knowledge(
-                url=URL, 
-                token=bearer_token,
-                file_id=request_data['id'],
-                user_id=user_id
-            )
-            if create_knowledge_status:
-                logger.info("Knowledge base updated successfully.")
-            else:
-                logger.error(f"Error creating or updating knowledge base")
-        elif "error" in response:
-            logger.error(f"Error uploading the file.")
-        else:
-            logger.info("Skipping knowledge creation because ENABLE_CREATE_KNOWLEDGE is false")
-
-        return response 
-    
-    except Exception as e:
-        return dumps(
-            {
-                "error": {
-                    "message": str(e)
-                }
-            }, 
-            indent=4, 
-            ensure_ascii=False
-        )
+        logger.error(f"Error generating Excel workbook: {e}")
+        return dumps({"error": "An error occurred while generating the Excel workbook."}, ensure_ascii=False)
 
 @mcp.tool(
     name = "generate_markdown",
-    title = "Generate Markdown document",
+    title = "Generate Markdown",
     description = MARKDOWN_TEMPLATE
-) 
+)
 async def generate_markdown(
-    python_script: Annotated[
-        str, 
-        Field(description="Complete Python script that generates the Markdown document using the provided template.")
-    ],
-    file_name: Annotated[
-        str, 
-        Field(description="Desired name for the generated Markdown file without the extension.")
-    ],
-    user_id: Annotated[
-        str,
-        Field(description="User ID to associate the knowledge base with the correct user.")
-    ],
-    ctx: Context[ServerSession, None]
-) -> dict:
-    """
-    Generate a Markdown file using a Python script.
-
-    Returns:
-        dict: Contains 'file_path_download' with a markdown hyperlink for downloading the generated Markdown file.
-              Format: "[Download {filename}.md](/api/v1/files/{id}/content)"
-    """
+    body: GenerateMarkdownRequest
+):
+    """Generates a Markdown document using a provided Python script."""
+    logger.info("Received request to generate Markdown document")
     try:
-        # Create a buffer for the Markdown file
-        buffer = BytesIO()
-        buffer.name = f'{file_name}.md'
-        context = {"md_buffer": buffer}
-        exec(python_script, context)
-
-        # Reset buffer position to start
-        buffer.seek(0)
-
-        # Retrieve authorization header from the request context
-        try:
-            bearer_token = ctx.request_context.request.headers.get("authorization")
-            logger.info(f"Received authorization header!")
-        except:
-            logger.error(f"Error retrieving authorization header")
-
-        # Upload the generated Markdown file
-        response, request_data = upload_file(
-            url=URL, 
-            token=bearer_token, 
-            file_data=buffer,
-            filename=file_name,
-            file_type="md"
+        request = build_request_context()
+        return _generate_markdown(
+            body.python_script,
+            body.file_name,
+            request,
+            OWUI_URL,
+            ENABLE_CREATE_KNOWLEDGE,
+            KNOWLEDGE_COLLECTION_NAME
         )
-
-        # If upload is successful, add to knowledge base
-        if "file_path_download" in response and ENABLE_CREATE_KNOWLEDGE:
-            # create knowledge base if not exists
-            create_knowledge_status = create_knowledge(
-                url=URL, 
-                token=bearer_token,
-                file_id=request_data['id'],
-                user_id=user_id
-            )
-            if create_knowledge_status:
-                logger.info("Knowledge base updated successfully.")
-            else:
-                logger.error(f"Error creating or updating knowledge base")
-        elif "error" in response:
-            logger.error(f"Error uploading the file.")
-        else:
-            logger.info("Skipping knowledge creation because ENABLE_CREATE_KNOWLEDGE is false")
-
-        return response 
-    
     except Exception as e:
-        return dumps(
-            {
-                "error": {
-                    "message": str(e)
-                }
-            }, 
-            indent=4, 
-            ensure_ascii=False
-        )
-    
-@mcp.tool(
-    name="full_context_docx",
-    title="Return the structure of a docx document",
-    description="""Return the index, style and text of each element in a docx document. This includes paragraphs, headings, tables, images, and other components. The output is a JSON object that provides a detailed representation of the document's structure and content.
-    The Agent will use this tool to understand the content and structure of the document before perform corrections (spelling, grammar, style suggestions, idea enhancements). Agent have to identify the index of each element to be able to add comments in the review_docx tool."""
-)
-async def full_context_docx(
-    file_id: Annotated[
-        str, 
-        Field(description="ID of the existing docx file to analyze (from a previous chat upload).")
-    ],
-    file_name: Annotated[
-        str, 
-        Field(description="The name of the original docx file")
-    ],
-    ctx: Context[ServerSession, None]
-) -> dict:
-    """
-    Return the structure of a docx document including index, style, and text of each element.
-    Returns:
-        dict: A JSON object with the structure of the document.
-    """
-    # Retrieve authorization header from the request context
+        logger.error(f"Error generating Markdown document: {e}")
+        return dumps({"error": "An error occurred while generating the Markdown document."}, ensure_ascii=False)
+
+async def generate_word_structured(
+    body: DocxBodyElements
+):
+    """Generates a Word document using provided metadata and body elements."""
+    logger.info("Received request to generate Word document")
     try:
-        bearer_token = ctx.request_context.request.headers.get("authorization")
-        logger.info(f"Received authorization header!")
-    except:
-        logger.error(f"Error retrieving authorization header")
-
-    try:
-        # Download in memory the docx file using the download_file helper
-        docx_file = download_file(
-            url=URL, 
-            token=bearer_token, 
-            file_id=file_id
+        # Check the structure of the document body elements
+        all_elements = generate_word_template_body_check(body)
+        if isinstance(all_elements, dict) and "error" in all_elements:
+            return dumps(all_elements, ensure_ascii=False)
+       
+        # headers
+        request = build_request_context()
+        return _generate_word_from_template(
+            body.document_cover,
+            body.columns_body,
+            all_elements,
+            body.file_name,
+            request,
+            OWUI_URL,
+            ENABLE_CREATE_KNOWLEDGE,
+            KNOWLEDGE_COLLECTION_NAME
         )
-
-        if isinstance(docx_file, dict) and "error" in docx_file:
-            return dumps(
-                docx_file,
-                indent=4,
-                ensure_ascii=False
-            )
-        else:
-            # Instantiate a Document object from the in-memory file
-            doc = Document(docx_file)
-            
-            # Structure to return
-            text_body = {
-                "file_name": file_name,
-                "file_id": file_id,
-                "body": []
-            }
-
-            # list to store different parts of the document
-            parts = []
-
-            for idx, parts in enumerate(doc.paragraphs):
-                # text of the paragraph
-                text = parts.text.strip()
-
-                if not text:
-                    # skip empty paragraphs
-                    continue  
-
-                # style of the paragraph
-                style = parts.style.name  
-                text_body["body"].append({
-                    "index": idx,
-                    "style": style ,  # style.name
-                    "text": text  # text
-                })
-
-            return dumps(
-                text_body,
-                indent=4,
-                ensure_ascii=False
-            )
     except Exception as e:
-        return dumps(
-            {
-                "error": {
-                    "message": str(e)
-                }
-            }, 
-            indent=4, 
-            ensure_ascii=False
-        )
+        logger.error(f"Error generating Word document: {e}")
+        return dumps({"error": "An error occurred while generating the Word document."}, ensure_ascii=False)
 
-@mcp.tool(
-    name="review_docx",
-    title="Review and comment on docx document",
-    description="""Review an existing docx document, perform corrections (spelling, grammar, style suggestions, idea enhancements), and add comments to cells. Returns a markdown hyperlink for downloading the reviewed file."""
-)
-async def review_docx(
-    file_id: Annotated[
-        str, 
-        Field(description="ID of the existing docx file to review (from a previous chat upload).")
-    ],
-    file_name: Annotated[
-        str, 
-        Field(description="The name of the original docx file")
-    ],
-    review_comments: Annotated[
-        List[ReviewComment], 
-        Field(description="List of objects where each object has keys: 'index' (int) and 'comment' (str). Example: [{'index': 0, 'comment': 'Fix typo'}].")
-    ],
-    user_id: Annotated[
-        str,
-        Field(description="User ID to associate the knowledge base with the correct user.")
-    ],
-    ctx: Context[ServerSession, None]
-) -> dict:
+async def generate_word(
+    python_script: Annotated[str, Field(description=ARGUMENT_DESCRIPTIONS["common_args"]["python_script"])],
+    file_name: Annotated[str, Field(description=ARGUMENT_DESCRIPTIONS["common_args"]["file_name"])],
+    images_list: Annotated[List[str], Field(description=ARGUMENT_DESCRIPTIONS["common_args"]["images_list"])] = []):
     """
-    Review an existing docx document and add comments to specified elements.
-    Returns:
-        dict: Contains 'file_path_download' with a markdown hyperlink for downloading the reviewed docx file.
-              Format: "[Download {filename}.docx](/api/v1/files/{id}/content)"
+    Generate a Word document using the provided AI-generated Python script. The images_list argument provides a list of 
+    image file IDs to be included in the document.
     """
-    # Retrieve authorization header from the request context
-    try:
-        bearer_token = ctx.request_context.request.headers.get("authorization")
-        logger.info(f"Received authorization header!")
-    except:
-        logger.error(f"Error retrieving authorization header")
-
-    try:
-        
-        # Download the existing docx file
-        docx_file = download_file(URL, bearer_token, file_id)
-        if isinstance(docx_file, dict) and "error" in docx_file:
-            return dumps(docx_file, indent=4, ensure_ascii=False)
-
-        # Load the document
-        doc = Document(docx_file)
-
-        # Add comments to specified paragraphs
-        paragraphs = list(doc.paragraphs)  # Get list of paragraphs
-        for item in review_comments:
-            try:
-                index = item.index
-                comment_text = item.comment
-            except (AttributeError, TypeError):
-                # malformed item; skip
-                continue
-
-            if index is None or comment_text is None:
-                continue
-
-            if 0 <= index < len(paragraphs):
-                para = paragraphs[index]
-                if para.runs:  # Ensure there are runs to comment on
-                    # Add comment to the first run of the paragraph
-                    doc.add_comment(
-                        runs=[para.runs[0]],
-                        text=comment_text,
-                        author="AI Reviewer",
-                        initials="AI"
-                    )
-
-        # Create a buffer for the reviewed file
-        buffer = BytesIO()
-        buffer.name = f'{Path(file_name).stem}_reviewed.docx'
-        doc.save(buffer)
-        buffer.seek(0)
-
-        # Upload the reviewed docx file
-        response, request_data = upload_file(
-            url=URL, 
-            token=bearer_token, 
-            file_data=buffer,
-            filename=f"{Path(file_name).stem}_reviewed",
-            file_type="docx"
-        )
-
-        # If upload is successful, add to knowledge base
-        if "file_path_download" in response and ENABLE_CREATE_KNOWLEDGE:
-            # create knowledge base if not exists
-            create_knowledge_status = create_knowledge(
-                url=URL, 
-                token=bearer_token,
-                file_id=request_data['id'],
-                user_id=user_id,
-                knowledge_name="Documents Reviewed by AI"
-            )
-            if create_knowledge_status:
-                logger.info("Knowledge base updated successfully.")
-            else:
-                logger.error(f"Error creating or updating knowledge base")
-        elif "error" in response:
-            logger.error(f"Error uploading the file.")
-        else:
-            logger.info("Skipping knowledge creation because ENABLE_CREATE_KNOWLEDGE is false")
-
-        return response
-    
-    except Exception as e:
-        return dumps(
-            {
-                "error": {
-                    "message": str(e)
-                }
-            }, 
-            indent=4, 
-            ensure_ascii=False
-        )
-    
-# Initialize and run the server
-if __name__ == "__main__":
-    mcp.run(
-        transport="streamable-http"
+    # headers
+    request = build_request_context()
+    return _generate_word(
+        python_script,
+        file_name,
+        images_list,
+        request,
+        OWUI_URL,
+        ENABLE_CREATE_KNOWLEDGE,
+        KNOWLEDGE_COLLECTION_NAME
     )
 
+
+register_word_tool(
+    mcp=mcp,
+    logger=logger,
+    word_template=WORD_TEMPLATE,
+    enable_word_element_filling=ENABLE_WORD_ELEMENT_FILLING,
+    generate_word_structured=generate_word_structured,
+    generate_word=generate_word,
+)
+
+
+@mcp.tool(
+    name = "list_docx_elements",
+    title = "List DOCX Elements",
+    description = "Return the DOCX structure with each element's index, style, and text to help identify target sections before adding comments with the review_docx tool."
+)
+async def full_context_docx(
+    body: FullContextDocxRequest
+):
+    """Returns the structure of a DOCX document, including index, style, and text of each element."""
+    logger.info("Received request to list DOCX document elements")
+    try:
+        # headers
+        request = build_request_context()
+        return _full_context_docx(body.file_id, body.file_name, request, OWUI_URL)
+    except Exception as e:
+        logger.error(f"Error listing DOCX document elements: {e}")
+        return dumps({"error": "An error occurred while listing the DOCX document elements."}, ensure_ascii=False)
+
+@mcp.tool(
+    name = "review_docx",
+    title = "Review DOCX Document",
+    description = "Review an existing DOCX document and add targeted comments on selected sections to improve spelling, grammar, style, and clarity."
+)
+async def review_docx(
+    body: ReviewDocxRequest
+):
+    """Reviews an existing DOCX document and adds comments to specific elements."""
+    logger.info("Received request to review DOCX document")
+    try:
+        # headers
+        request = build_request_context()
+        return _review_docx(
+            body.file_id,
+            body.file_name,
+            body.review_comments,
+            request,
+            OWUI_URL,
+            ENABLE_CREATE_KNOWLEDGE,
+            REVIEWER_AI_ASSISTANT_NAME,
+            KNOWLEDGE_COLLECTION_NAME
+        )
+    except Exception as e:
+        logger.error(f"Error reviewing DOCX document: {e}")
+        return dumps({"error": "An error occurred while reviewing the DOCX document."}, ensure_ascii=False)
+
+
+def main() -> None:
+    logger.info(SERVER_BANNER)
+
+    if MCP_TRANSPORT == "stdio":
+        logger.info("Starting MCP server with stdio transport")
+        mcp.run(transport="stdio", show_banner=False)
+        return
+
+    if MCP_TRANSPORT == "streamable-http":
+        logger.info(f"Starting MCP server with streamable-http transport on 0.0.0.0:{PORT}")
+        mcp.run(transport="streamable-http", host='0.0.0.0', port=PORT, show_banner=False)
+        return
+
+    raise ValueError(
+        "Unsupported MCP_TRANSPORT value "
+        f"'{MCP_TRANSPORT}'. Supported values: 'streamable-http', 'stdio'."
+    )
+
+# --- Main ---
+if __name__ == "__main__":
+    main()
+
+    

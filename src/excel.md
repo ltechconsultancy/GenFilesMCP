@@ -1,0 +1,26 @@
+Generate an Excel workbook using a Python script. Returns a markdown hyperlink for downloading the generated file.
+
+Template structure:
+```python
+# Allowed packages
+import numpy as np
+from openpyxl import Workbook
+
+# Import here other xlsx packages you need, but do not import other packages that are not allowed.
+
+# Buffer to save excel file, previously defined in the server.py file
+XLSX_BUFFER = xlsx_buffer # Do not modify this line, it is defined in the server.py file
+
+# Initialize a new Workbook instance
+wb = Workbook()
+
+# Apply the required data transformations to build the Excel workbook based on the user's request.
+# Create the necessary worksheets, populate tables, add charts, and format cells for clarity and visual appeal.
+
+# Save the Excel workbook
+wb.save(XLSX_BUFFER) # Do not modify this line, it is defined in the server.py file
+```
+
+Provide a complete Python script following this template to generate your Excel workbook.
+
+This tool return a markdown hyperlink for download: `[Download {filename}.{ext}](/api/v1/files/{id}/content)`. The path must be immutable; only {id} is dynamic. If the assistant modifies this output, users cannot download generated or reviewed files.

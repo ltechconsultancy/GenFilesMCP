@@ -13,3 +13,7 @@ wheels/
 *.env
 # local folders
 /documentos_test/*
+/Pruebas/*
+release_description.md
+Evaluacion de modelos.md
+test_presentation.pptx
