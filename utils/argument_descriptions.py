@@ -28,7 +28,7 @@ try:
     🛠️ Gen Files MCP  Server
     ⚙️ Processing & Generating Documents
     🔄 Transforming Ideas into Files               
-    You can generate '.md', '.docx', '.pptx' y '.xlsx' 🚀 Powered by AI   
+    You can generate '.md', '.docx', '.pptx', '.xlsx' y '.pdf' 🚀 Powered by AI
     🤖 AI-Powered Document Review System (DOCX Only)          
     📝 Intelligent Comments & Suggestions Added               
 

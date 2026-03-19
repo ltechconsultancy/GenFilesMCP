@@ -4,13 +4,13 @@ from importlib import resources
 
 logger = get_logger(__name__)
 
-def load_md_templates(word_element_filling: bool=False) -> tuple[str, str, str, str, str]:
+def load_md_templates(word_element_filling: bool=False) -> tuple[str, str, str, str, str, str]:
     """
-    Load Markdown templates for PowerPoint, Excel, Word, Markdown and MCP instructions.
+    Load Markdown templates for PowerPoint, Excel, Word, Markdown, PDF and MCP instructions.
 
     Returns:
-        tuple[str, str, str, str, str]: A tuple containing the Markdown templates for
-                                        PowerPoint, Excel, Word, Markdown and the MCP instructions.
+        tuple[str, str, str, str, str, str]: A tuple containing the Markdown templates for
+                                             PowerPoint, Excel, Word, Markdown, PDF and the MCP instructions.
     """
 
     try:
@@ -31,6 +31,9 @@ def load_md_templates(word_element_filling: bool=False) -> tuple[str, str, str, 
         with resources.files("src").joinpath("markdown.md").open("r", encoding="utf-8") as f:
             MARKDOWN_TEMPLATE = f.read()
 
+        with resources.files("src").joinpath("pdf.md").open("r", encoding="utf-8") as f:
+            PDF_TEMPLATE = f.read()
+
         with resources.files("src").joinpath("mcp_instructions.md").open("r", encoding="utf-8") as f:
             MCP_INSTRUCTIONS = f.read()
 
@@ -41,6 +44,7 @@ def load_md_templates(word_element_filling: bool=False) -> tuple[str, str, str, 
             EXCEL_TEMPLATE,
             WORD_TEMPLATE,
             MARKDOWN_TEMPLATE,
+            PDF_TEMPLATE,
             MCP_INSTRUCTIONS
         )
     

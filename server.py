@@ -20,6 +20,7 @@ from utils.pydantic_models_endpoints import (
     GeneratePowerPointRequest,
     GenerateExcelRequest,
     GenerateMarkdownRequest,
+    GeneratePdfRequest,
     DocxBodyElements,
     FullContextDocxRequest,
     ReviewDocxRequest
@@ -31,6 +32,7 @@ from tools.excel_tool import generate_excel as _generate_excel
 from tools.markdown_tool import generate_markdown as _generate_markdown
 from tools.docx_tool import full_context_docx as _full_context_docx, review_docx as _review_docx, generate_word_from_template as _generate_word_from_template
 from tools.docx_tool import generate_word as _generate_word
+from tools.pdf_tool import generate_pdf as _generate_pdf
 # Parameters
 ENABLE_WORD_ELEMENT_FILLING = getenv('ENABLE_WORD_ELEMENT_FILLING', 'false').lower() == 'true' 
 OWUI_URL = getenv('OWUI_URL', 'http://localhost:8080')
@@ -39,7 +41,7 @@ MCP_TRANSPORT = getenv('MCP_TRANSPORT', 'streamable-http').strip().lower()
 OWUI_API_KEY = (getenv('OWUI_API_KEY') or '').strip() or None
 REVIEWER_AI_ASSISTANT_NAME = getenv('REVIEWER_AI_ASSISTANT_NAME', 'GenFilesMCP')
 KNOWLEDGE_COLLECTION_NAME = getenv('KNOWLEDGE_COLLECTION_NAME', 'My Generated Files').strip()
-POWERPOINT_TEMPLATE, EXCEL_TEMPLATE, WORD_TEMPLATE, MARKDOWN_TEMPLATE, MCP_INSTRUCTIONS = load_md_templates(ENABLE_WORD_ELEMENT_FILLING)
+POWERPOINT_TEMPLATE, EXCEL_TEMPLATE, WORD_TEMPLATE, MARKDOWN_TEMPLATE, PDF_TEMPLATE, MCP_INSTRUCTIONS = load_md_templates(ENABLE_WORD_ELEMENT_FILLING)
 ENABLE_CREATE_KNOWLEDGE = getenv('ENABLE_CREATE_KNOWLEDGE', 'true').lower() == 'true'
 
 
@@ -191,6 +193,30 @@ register_word_tool(
     generate_word=generate_word,
 )
 
+
+@mcp.tool(
+    name = "generate_pdf",
+    title = "Generate PDF",
+    description = PDF_TEMPLATE
+)
+async def generate_pdf(
+    body: GeneratePdfRequest
+):
+    """Generates a PDF document using a provided Python script."""
+    logger.info("Received request to generate PDF document")
+    try:
+        request = build_request_context()
+        return _generate_pdf(
+            body.python_script,
+            body.file_name,
+            request,
+            OWUI_URL,
+            ENABLE_CREATE_KNOWLEDGE,
+            KNOWLEDGE_COLLECTION_NAME
+        )
+    except Exception as e:
+        logger.error(f"Error generating PDF document: {e}")
+        return dumps({"error": "An error occurred while generating the PDF document."}, ensure_ascii=False)
 
 @mcp.tool(
     name = "list_docx_elements",

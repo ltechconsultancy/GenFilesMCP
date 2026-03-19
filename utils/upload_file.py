@@ -26,7 +26,8 @@ def upload_file(url: str, token: str, file_data: BytesIO, filename:str, file_typ
         'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
         'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'md': 'text/markdown'
+        'md': 'text/markdown',
+        'pdf': 'application/pdf'
     }
     
     mime_type = mime_types.get(file_type, 'application/octet-stream')
