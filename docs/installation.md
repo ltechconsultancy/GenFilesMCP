@@ -44,7 +44,7 @@ Use this mode when GenFilesMCP will run as its own HTTP MCP server and Open Web 
 Pull the pre-built Docker image from GitHub Container Registry:
 
 ```bash
-docker pull ghcr.io/baronco/genfilesmcp:v0.3.0
+docker pull ghcr.io/baronco/genfilesmcp:v0.3.1-alpha.1
 ```
 
 Run the container:
@@ -56,13 +56,13 @@ docker run -d --restart unless-stopped -p YOUR_PORT:YOUR_PORT \
   -e REVIEWER_AI_ASSISTANT_NAME="GenFilesMCP" \
   -e ENABLE_CREATE_KNOWLEDGE=false \
   --name gen_files_mcp \
-  ghcr.io/baronco/genfilesmcp:v0.3.0
+  ghcr.io/baronco/genfilesmcp:v0.3.1-alpha.1
 ```
 
 One-line command (copy/paste):
 
 ```bash
-docker run -d --restart unless-stopped -p 8016:8016 -e OWUI_URL="http://host.docker.internal:3000" -e PORT=8016 -e REVIEWER_AI_ASSISTANT_NAME="GenFilesMCP" -e ENABLE_CREATE_KNOWLEDGE=false --name gen_files_mcp ghcr.io/baronco/genfilesmcp:v0.3.0
+docker run -d --restart unless-stopped -p 8016:8016 -e OWUI_URL="http://host.docker.internal:3000" -e PORT=8016 -e REVIEWER_AI_ASSISTANT_NAME="GenFilesMCP" -e ENABLE_CREATE_KNOWLEDGE=false --name gen_files_mcp ghcr.io/baronco/genfilesmcp:v0.3.1-alpha.1
 ```
 
 Alternatively, use the `:latest` tag for the most recent version:
@@ -279,7 +279,7 @@ Example `config.json`:
       "command": "uvx",
       "args": [
         "--from",
-        "git+https://github.com/Baronco/GenFilesMCP.git@v0.3.0",
+        "git+https://github.com/Baronco/GenFilesMCP.git@v0.3.1-alpha.1",
         "genfilesmcp"
       ],
       "env": {
@@ -295,7 +295,7 @@ Example `config.json`:
       "command": "uvx",
       "args": [
         "--from",
-        "git+https://github.com/Baronco/GenFilesMCP.git@v0.3.0",
+        "git+https://github.com/Baronco/GenFilesMCP.git@v0.3.1-alpha.1",
         "genfilesmcp"
       ],
       "env": {

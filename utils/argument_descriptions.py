@@ -21,14 +21,14 @@ try:
         }
     }
 
-    SERVER_VERSION = "v0.3.0⚡"
+    SERVER_VERSION = "v0.3.1-alpha.1⚡"
 
     SERVER_BANNER = f"""
     
     🛠️ Gen Files MCP  Server
     ⚙️ Processing & Generating Documents
     🔄 Transforming Ideas into Files               
-    You can generate '.md', '.docx', '.pptx', '.xlsx' y '.pdf' 🚀 Powered by AI
+    You can generate '.md', '.docx', '.pptx', '.xlsx' and '.pdf' 🚀 Powered by AI
     🤖 AI-Powered Document Review System (DOCX Only)          
     📝 Intelligent Comments & Suggestions Added               
 

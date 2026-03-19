@@ -15,7 +15,7 @@ GenFiles is an MCP Server that generates PowerPoint, Excel, Word, or Markdown fi
   - Get the built-in tool `Chat Context Tool` for retrieving docx files and images uploaded in the chat for use in generation or review.
   - Step-by-step setup instructions.
 - [Usage Examples](docs/usage.md) 📄
-  - See how to generate DOCX, XLSX, PPTX files.
+  - See how to generate DOCX, XLSX, PPTX and PDF files.
   - Learn how to review Word documents with AI comments.
 
 > 🚨 Please follow the installation instructions step by step to avoid errors.
@@ -27,7 +27,7 @@ GenFiles is an MCP Server that generates PowerPoint, Excel, Word, or Markdown fi
 To quickly get started, you can use the pre-built Docker image:
 
 ```bash
-docker pull ghcr.io/baronco/genfilesmcp:v0.3.0
+docker pull ghcr.io/baronco/genfilesmcp:v0.3.1-alpha.1
 ```
 
 Run the container:
@@ -39,13 +39,13 @@ docker run -d --restart unless-stopped -p 8016:8016 \
   -e REVIEWER_AI_ASSISTANT_NAME="GenFilesMCP" \
   -e ENABLE_CREATE_KNOWLEDGE=false \
   --name gen_files_mcp \
-  ghcr.io/baronco/genfilesmcp:v0.3.0
+  ghcr.io/baronco/genfilesmcp:v0.3.1-alpha.1
 ```
 
 Or copy and paste this one-liner:
 
 ```bash
-docker run -d --restart unless-stopped -p 8016:8016 -e OWUI_URL="http://host.docker.internal:3000" -e PORT=8016 -e REVIEWER_AI_ASSISTANT_NAME="GenFilesMCP" -e ENABLE_CREATE_KNOWLEDGE=false --name gen_files_mcp ghcr.io/baronco/genfilesmcp:v0.3.0
+docker run -d --restart unless-stopped -p 8016:8016 -e OWUI_URL="http://host.docker.internal:3000" -e PORT=8016 -e REVIEWER_AI_ASSISTANT_NAME="GenFilesMCP" -e ENABLE_CREATE_KNOWLEDGE=false --name gen_files_mcp ghcr.io/baronco/genfilesmcp:v0.3.1-alpha.1
 ```
 
 ### Environment Variables
@@ -112,6 +112,20 @@ Example using gpt 5.4:
 
 <p align="center">
   <img src="img/excel3.png" alt="XLSX Example Using GPT 5.4" />
+</p>
+
+#### PDF Files 📚
+
+Example of PDF generation using gpt 5.4:
+
+<p align="center">
+  <img src="img/pdf.png" alt="PDF Example" />
+</p>
+
+Example of PDF generation using claude sonnet 4.6:
+
+<p align="center">
+  <img src="img/pdf2.png" alt="PDF Example" />
 </p>
 
 ## Star History

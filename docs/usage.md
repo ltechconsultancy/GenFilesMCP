@@ -9,6 +9,7 @@
 - [Example 2: Generating a XLSX file](#example-2-generating-a-xlsx-file)
 - [Example 3: Generating a PPTX file](#example-3-generating-a-pptx-file)
 - [Example 4: Reviewing a DOCX file with comments](#example-4-reviewing-a-docx-file-with-comments)
+- [Example 5: Generating a PDF file](#example-5-generating-a-pdf-file)
 
 ### Example 1: Generating a DOCX file
 
@@ -164,3 +165,24 @@ The review feature allows the agent to analyze uploaded documents and add struct
 > Generated using the GenFiles MCP Server and GPT-5 mini
 
 > The review functionality preserves the original formatting while adding structured comments
+
+### Example 5: Generating a PDF file
+
+The server can generate PDF files using code-based generation. The quality of the generated PDF depends on the model used, with the latest GPT models or Claude models could produce good results.
+
+> This alpha version does not support images in PDF generation, but the backend can generate multi-page PDFs with formatted text, titles, sections, and lists.
+
+This example use the Microsoft learn MCP for search documentation and GenFiles MCP Server for PDF generation:
+
+
+<p align="center">
+  <img src="../img/pdf0.png" alt="Generating PDF Example 1" />
+</p>
+
+Open the generated PDF file using Claude Sonnet 4.6:
+
+<p align="center">
+  <img src="../img/pdf2.png" alt="Generating PDF Example 2" />
+</p>
+
+> **Example files**: You can find example PDF files in the `example` folder, the prefix of this examples ar `Azure_Functions_Python_SDK_Guide`.
