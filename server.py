@@ -25,6 +25,7 @@ from utils.pydantic_models_endpoints import (
     FullContextDocxRequest,
     ReviewDocxRequest
 )
+from utils.rich_ui_download import render_download_ui_if_available
 
 # Import tools from the tools directory
 from tools.powerpoint_tool import generate_powerpoint as _generate_powerpoint
@@ -61,6 +62,14 @@ def build_request_context() -> dict[str, dict[str, str] | str]:
 
     return {"headers": get_http_headers()}
 
+
+def maybe_render_download_ui(result: Any) -> Any:
+    """Apply UI wrapper only for stdio transport, otherwise pass through."""
+    if MCP_TRANSPORT == "stdio":
+        return render_download_ui_if_available(result)
+    return result
+
+
 @mcp.tool(
     name = "generate_powerpoint",
     title = "Generate PowerPoint",
@@ -69,20 +78,24 @@ def build_request_context() -> dict[str, dict[str, str] | str]:
 async def generate_powerpoint(
     body: GeneratePowerPointRequest
 ):
-    """Generates a PowerPoint presentation using a provided Python script."""
+    """Generates a PowerPoint presentation using a provided Python script. The images_list argument provides a list of 
+    image file IDs to be included in the document.
+    """
     logger.info("Received request to generate PowerPoint presentation")
 
     try:
         # headers
         request = build_request_context()
-        return _generate_powerpoint(
+        result = _generate_powerpoint(
             body.python_script,
             body.file_name,
+            body.images_list,
             request,
             OWUI_URL,
             ENABLE_CREATE_KNOWLEDGE,
             KNOWLEDGE_COLLECTION_NAME
         )
+        return maybe_render_download_ui(result)
     except Exception as e:
         logger.error(f"Error generating PowerPoint presentation: {e}")
         return dumps({"error": "An error occurred while generating the PowerPoint presentation."}, ensure_ascii=False)
@@ -100,7 +113,7 @@ async def generate_excel(
     try:
         # headers
         request = build_request_context()
-        return _generate_excel(
+        result = _generate_excel(
             body.python_script,
             body.file_name,
             request,
@@ -108,6 +121,7 @@ async def generate_excel(
             ENABLE_CREATE_KNOWLEDGE,
             KNOWLEDGE_COLLECTION_NAME
         )
+        return maybe_render_download_ui(result)
     except Exception as e:
         logger.error(f"Error generating Excel workbook: {e}")
         return dumps({"error": "An error occurred while generating the Excel workbook."}, ensure_ascii=False)
@@ -124,7 +138,7 @@ async def generate_markdown(
     logger.info("Received request to generate Markdown document")
     try:
         request = build_request_context()
-        return _generate_markdown(
+        result = _generate_markdown(
             body.python_script,
             body.file_name,
             request,
@@ -132,6 +146,7 @@ async def generate_markdown(
             ENABLE_CREATE_KNOWLEDGE,
             KNOWLEDGE_COLLECTION_NAME
         )
+        return maybe_render_download_ui(result)
     except Exception as e:
         logger.error(f"Error generating Markdown document: {e}")
         return dumps({"error": "An error occurred while generating the Markdown document."}, ensure_ascii=False)
@@ -149,7 +164,7 @@ async def generate_word_structured(
        
         # headers
         request = build_request_context()
-        return _generate_word_from_template(
+        result = _generate_word_from_template(
             body.document_cover,
             body.columns_body,
             all_elements,
@@ -159,6 +174,7 @@ async def generate_word_structured(
             ENABLE_CREATE_KNOWLEDGE,
             KNOWLEDGE_COLLECTION_NAME
         )
+        return maybe_render_download_ui(result)
     except Exception as e:
         logger.error(f"Error generating Word document: {e}")
         return dumps({"error": "An error occurred while generating the Word document."}, ensure_ascii=False)
@@ -171,18 +187,24 @@ async def generate_word(
     Generate a Word document using the provided AI-generated Python script. The images_list argument provides a list of 
     image file IDs to be included in the document.
     """
-    # headers
-    request = build_request_context()
-    return _generate_word(
-        python_script,
-        file_name,
-        images_list,
-        request,
-        OWUI_URL,
-        ENABLE_CREATE_KNOWLEDGE,
-        KNOWLEDGE_COLLECTION_NAME
-    )
+    logger.info("Received request to generate Word document")
 
+    try:
+        # headers
+        request = build_request_context()
+        result = _generate_word(
+            python_script,
+            file_name,
+            images_list,
+            request,
+            OWUI_URL,
+            ENABLE_CREATE_KNOWLEDGE,
+            KNOWLEDGE_COLLECTION_NAME
+        )
+        return maybe_render_download_ui(result)
+    except Exception as e:
+        logger.error(f"Error generating Word document: {e}")
+        return dumps({"error": "An error occurred while generating the Word document."}, ensure_ascii=False)
 
 register_word_tool(
     mcp=mcp,
@@ -192,7 +214,6 @@ register_word_tool(
     generate_word_structured=generate_word_structured,
     generate_word=generate_word,
 )
-
 
 @mcp.tool(
     name = "generate_pdf",
@@ -206,7 +227,7 @@ async def generate_pdf(
     logger.info("Received request to generate PDF document")
     try:
         request = build_request_context()
-        return _generate_pdf(
+        result = _generate_pdf(
             body.python_script,
             body.file_name,
             request,
@@ -214,6 +235,7 @@ async def generate_pdf(
             ENABLE_CREATE_KNOWLEDGE,
             KNOWLEDGE_COLLECTION_NAME
         )
+        return maybe_render_download_ui(result)
     except Exception as e:
         logger.error(f"Error generating PDF document: {e}")
         return dumps({"error": "An error occurred while generating the PDF document."}, ensure_ascii=False)
@@ -249,7 +271,7 @@ async def review_docx(
     try:
         # headers
         request = build_request_context()
-        return _review_docx(
+        result = _review_docx(
             body.file_id,
             body.file_name,
             body.review_comments,
@@ -259,6 +281,7 @@ async def review_docx(
             REVIEWER_AI_ASSISTANT_NAME,
             KNOWLEDGE_COLLECTION_NAME
         )
+        return maybe_render_download_ui(result)
     except Exception as e:
         logger.error(f"Error reviewing DOCX document: {e}")
         return dumps({"error": "An error occurred while reviewing the DOCX document."}, ensure_ascii=False)

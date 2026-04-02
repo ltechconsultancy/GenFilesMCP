@@ -15,6 +15,7 @@ logger = get_logger(__name__)
 class GeneratePowerPointRequest(BaseModel):
     python_script: str = Field(description=ARGUMENT_DESCRIPTIONS["common_args"]["python_script"])
     file_name: str = Field(description=ARGUMENT_DESCRIPTIONS["common_args"]["file_name"])
+    images_list: List[str] = Field(default_factory=list, description=ARGUMENT_DESCRIPTIONS["common_args"]["images_list"])
 
 class GenerateExcelRequest(BaseModel):
     python_script: str = Field(description=ARGUMENT_DESCRIPTIONS["common_args"]["python_script"])

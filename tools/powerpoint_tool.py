@@ -1,4 +1,5 @@
 from io import BytesIO
+from utils.download_file import download_file
 from utils.upload_file import upload_file
 from utils.knowledge import create_knowledge
 from utils.get_user_id import get_user_id
@@ -8,7 +9,7 @@ from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-def generate_powerpoint(python_script, file_name, request, URL, ENABLE_CREATE_KNOWLEDGE, knowledge_name):
+def generate_powerpoint(python_script, file_name, images_list, request, URL, ENABLE_CREATE_KNOWLEDGE, knowledge_name): 
     """
     Generate a PowerPoint file using an AI-generated Python script.
 
@@ -16,9 +17,22 @@ def generate_powerpoint(python_script, file_name, request, URL, ENABLE_CREATE_KN
         dict: Contains 'file_path_download' with a markdown hyperlink for downloading the generated PowerPoint file.
     """
     try:
+        images = [] # to save bytesIO images
+
+        if len(images_list) > 0:
+            logger.info(f"Received {len(images_list)} images for PPTX generation.")
+
+        # download images
+        for idx, image in enumerate(images_list):
+            image_file = download_file(URL, _get_bearer_token(request), image)
+            if isinstance(image_file, dict) and "error" in image_file:
+                return {"error": {"message": f"Error downloading image with ID {image}: {image_file['error']['message']}"}}
+            images.append(image_file)
+        
+        # Prepare the execution context with images
         buffer = BytesIO()
         buffer.name = f'{file_name}.pptx'
-        context = {"pptx_buffer": buffer}
+        context = {"pptx_buffer": buffer, "images": images}
         try:
             exec(python_script, context)
         except Exception as exec_e:
