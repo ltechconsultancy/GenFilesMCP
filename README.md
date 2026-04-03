@@ -27,7 +27,7 @@ GenFiles is an MCP Server that generates PowerPoint, Excel, Word, or Markdown fi
 To quickly get started, you can use the pre-built Docker image:
 
 ```bash
-docker pull ghcr.io/baronco/genfilesmcp:v0.3.1-alpha.1
+docker pull ghcr.io/baronco/genfilesmcp:v0.4.0-alpha.2
 ```
 
 Run the container:
@@ -39,13 +39,13 @@ docker run -d --restart unless-stopped -p 8016:8016 \
   -e REVIEWER_AI_ASSISTANT_NAME="GenFilesMCP" \
   -e ENABLE_CREATE_KNOWLEDGE=false \
   --name gen_files_mcp \
-  ghcr.io/baronco/genfilesmcp:v0.3.1-alpha.1
+  ghcr.io/baronco/genfilesmcp:v0.4.0-alpha.2
 ```
 
 Or copy and paste this one-liner:
 
 ```bash
-docker run -d --restart unless-stopped -p 8016:8016 -e OWUI_URL="http://host.docker.internal:3000" -e PORT=8016 -e REVIEWER_AI_ASSISTANT_NAME="GenFilesMCP" -e ENABLE_CREATE_KNOWLEDGE=false --name gen_files_mcp ghcr.io/baronco/genfilesmcp:v0.3.1-alpha.1
+docker run -d --restart unless-stopped -p 8016:8016 -e OWUI_URL="http://host.docker.internal:3000" -e PORT=8016 -e REVIEWER_AI_ASSISTANT_NAME="GenFilesMCP" -e ENABLE_CREATE_KNOWLEDGE=false --name gen_files_mcp ghcr.io/baronco/genfilesmcp:v0.4.0-alpha.2
 ```
 
 ### Environment Variables

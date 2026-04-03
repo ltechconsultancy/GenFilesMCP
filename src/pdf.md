@@ -18,6 +18,10 @@ Template structure:
 def pdf():
     PDF_BUFFER = pdf_buffer # Do not modify this line, it is defined in the server.py file
 
+    # If images are needed, they are preloaded by the server and passed here.
+    # LIST_OF_BYTES_IO_IMAGES is a list of BytesIO objects.
+    LIST_OF_BYTES_IO_IMAGES = images # Do not modify this line if images are needed, it is defined in the server.py file
+
     from reportlab.lib.pagesizes import A4
     from reportlab.lib import colors
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -98,6 +102,6 @@ pdf() # It should be always here
 
 - `PDF_BUFFER` is a `BytesIO` object — `SimpleDocTemplate` accepts it directly, no `.encode()` needed.
 - Use `reportlab.platypus` flowables (`Paragraph`, `Spacer`, `Table`, `Image`, etc.) to compose the layout.
-- For images, use `reportlab.platypus.Image(path_or_buffer, width=..., height=...)`.
+- For images, use `reportlab.platypus.Image(buffer, width=..., height=...)` where `buffer` is an element from `LIST_OF_BYTES_IO_IMAGES`. Call `.seek(0)` on the buffer before passing it.
 - For multi-page documents, flowables automatically paginate — no manual page breaks needed unless you use `PageBreak()`.
 - Avoid importing packages outside of `reportlab` and the Python standard library.

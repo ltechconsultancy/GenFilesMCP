@@ -28,6 +28,7 @@ class GenerateMarkdownRequest(BaseModel):
 class GeneratePdfRequest(BaseModel):
     python_script: str = Field(description=ARGUMENT_DESCRIPTIONS["common_args"]["python_script"])
     file_name: str = Field(description=ARGUMENT_DESCRIPTIONS["common_args"]["file_name"])
+    images_list: List[str] = Field(default_factory=list, description=ARGUMENT_DESCRIPTIONS["common_args"]["images_list"])
  
 class DocxBodyElements(BaseModel):
     document_cover: Cover = Field(description="This argument defines the cover page of the document. Set page_break to True for generating general reports and False for academic papers. Backend is able to center the cover page content automatically so no need to add extra spaces or new lines.")

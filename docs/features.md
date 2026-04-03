@@ -16,7 +16,7 @@
 
 ## Status / Compatibility
 
-This release is **v0.3.1-alpha.1** and was tested with Open Web UI v0.8.8: [Open Web UI GitHub Repository](https://github.com/open-webui/open-webui)
+This release is **v0.4.0-alpha.2** and was tested with Open Web UI v0.8.8: [Open Web UI GitHub Repository](https://github.com/open-webui/open-webui)
 
 **Important compatibility note:** native MCP support appeared in **Open Web UI v0.6.31**, and the paginated knowledge API used by this release arrived in **v0.6.42**. Because Open Web UI has changed significantly since then, the recommended minimum for this release is **v0.8.8**. For Open Web UI versions earlier than v0.6.42, use previous GenFiles releases **<= 0.2.2**.
 
