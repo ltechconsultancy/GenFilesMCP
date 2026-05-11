@@ -33,18 +33,15 @@ jobs:
         run: uv sync --frozen
 
       - name: Run pip-audit
-        run: uv run pip-audit --strict --desc --fix --dry-run -f json -o audit-results.json || true
-
-      - name: Display results
         run: |
-          echo "## pip-audit results"
-          cat audit-results.json | python3 -m json.tool
-          # Fail if vulnerabilities found
-          VULNS=$(python3 -c "import json; d=json.load(open('audit-results.json')); print(len(d.get('dependencies', [])))")
-          if [ "$VULNS" -gt 0 ]; then
-            echo "::error::Found $VULNS vulnerable dependencies"
+          uv run pip-audit --strict --desc 2>&1 | tee audit-output.txt
+          EXIT_CODE=${PIPESTATUS[0]}
+          echo "pip-audit exit code: $EXIT_CODE"
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo "::error::pip-audit found vulnerabilities"
             exit 1
           fi
+          echo "No vulnerabilities found"
 
   # ── Docker image CVEs (Trivy) ───────────────────────────────
   trivy-image:
@@ -57,7 +54,7 @@ jobs:
         run: docker build -t genfilesmcp:scan .
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.31.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: "genfilesmcp:scan"
           format: "sarif"
