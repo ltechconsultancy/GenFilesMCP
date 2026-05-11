@@ -32,6 +32,9 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen
 
+      - name: Install pip-audit
+        run: uv add --dev pip-audit
+
       - name: Run pip-audit
         run: |
           uv run pip-audit --strict --desc 2>&1 | tee audit-output.txt
