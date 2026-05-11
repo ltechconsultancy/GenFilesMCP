@@ -37,7 +37,7 @@ jobs:
 
       - name: Run pip-audit
         run: |
-          uv run pip-audit --desc 2>&1 | tee audit-output.txt
+          uv run pip-audit --desc --skip-editable 2>&1 | tee audit-output.txt
           EXIT_CODE=${PIPESTATUS[0]}
           echo "pip-audit exit code: $EXIT_CODE"
           if [ $EXIT_CODE -ne 0 ]; then
