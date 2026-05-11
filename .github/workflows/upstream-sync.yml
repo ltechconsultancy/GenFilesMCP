@@ -1,0 +1,69 @@
+name: Sync Upstream
+
+on:
+  schedule:
+    # Check daily at 07:00 UTC
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    name: Check & Sync Upstream
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream remote
+        run: git remote add upstream https://github.com/Baronco/GenFilesMCP.git || true
+
+      - name: Fetch upstream
+        run: git fetch upstream main
+
+      - name: Check for new commits
+        id: check
+        run: |
+          UPSTREAM_COMMITS=$(git rev-list HEAD..upstream/main --count)
+          echo "new_commits=$UPSTREAM_COMMITS" >> $GITHUB_OUTPUT
+          echo "Found $UPSTREAM_COMMITS new upstream commits"
+
+      - name: Create sync branch and PR
+        if: steps.check.outputs.new_commits != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="upstream-sync/$(date +%Y%m%d)"
+          git checkout -b "$BRANCH"
+          git merge upstream/main --no-edit || {
+            echo "::warning::Merge conflicts detected. Manual resolution needed."
+            git merge --abort
+            exit 1
+          }
+          git push origin "$BRANCH"
+          gh pr create \
+            --title "chore: sync upstream GenFilesMCP $(date +%Y-%m-%d)" \
+            --body "$(cat <<'EOF'
+          ## Upstream Sync
+
+          Automated sync from [Baronco/GenFilesMCP](https://github.com/Baronco/GenFilesMCP).
+
+          **Review checklist:**
+          - [ ] Check changelog/release notes for breaking changes
+          - [ ] Verify security scan passes on this PR
+          - [ ] Test locally before merging
+
+          > This PR was created automatically by the upstream-sync workflow.
+          EOF
+          )" \
+            --base main \
+            --head "$BRANCH"
