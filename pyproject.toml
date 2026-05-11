@@ -30,6 +30,7 @@ dependencies = [
     "lxml>=6.1.0",
     "pygments>=2.20.0",
     "pyjwt>=2.12.0",
+    "authlib>=1.6.9",
 ]
 
 [project.scripts]
